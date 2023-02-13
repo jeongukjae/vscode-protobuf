@@ -1,5 +1,7 @@
 {
   "name": "protobuf",
+  "publisher": "jeongukjae",
+  "license": "MIT",
   "displayName": "protobuf",
   "description": "A VSCode Extension for Protocol Buffers",
   "version": "0.0.1",
@@ -7,10 +9,16 @@
     "vscode": "^1.75.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages",
+    "Snippets",
+    "Linters",
+    "Formatters",
+    "Testing"
   ],
   "activationEvents": [
-    "onCommand:protobuf.helloWorld"
+    "onCommand:protobuf.helloWorld",
+    "onLanguage:protobuf3",
+    "onLanguage:textproto"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -18,6 +26,38 @@
       {
         "command": "protobuf.helloWorld",
         "title": "Hello World"
+      }
+    ],
+    "languages": [
+      {
+        "id": "protobuf3",
+        "extensions": [
+          ".proto"
+        ],
+        "aliases": [
+          "Protocol Buffers 3"
+        ]
+      },
+      {
+        "id": "textproto",
+        "extensions": [
+          ".textproto",
+          ".textpb",
+          ".prototext",
+          ".prototxt",
+          ".pbtxt"
+        ],
+        "aliases": [
+          "Protocol Buffers Text Format"
+        ],
+        "configuration": "./languages/textproto.language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "textproto",
+        "scopeName": "source.textproto",
+        "path": "./syntaxes/textproto.tmLanguage.json"
       }
     ]
   },
