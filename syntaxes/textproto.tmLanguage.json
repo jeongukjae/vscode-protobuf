@@ -163,8 +163,13 @@
                     "name": "constant.numeric.hex.textproto"
                 },
                 {
+                    "comment": "handles f-suffixed numbers",
+                    "match": "[+-.]?(?=[1-9]|0(?!\\d))\\d+(\\.\\d+)?[fF]",
+                    "name": "constant.numeric.float.textproto"
+                },
+                {
                     "comment": "handles integer and decimal numbers",
-                    "match": "[+-.]?(?=[1-9]|0(?!\\d))\\d+(\\.\\d+)?([eE][+-]?\\d+)?",
+                    "match": "[+-.]?(?=[1-9]|0(?!\\d))\\d+(\\.\\d+)?",
                     "name": "constant.numeric.textproto"
                 }
             ]
