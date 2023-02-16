@@ -16,7 +16,7 @@ import {
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
-import { log } from './log';
+import logger from './log';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -29,7 +29,7 @@ let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
-log("Starting Protobuf Buffers Language Server...");
+logger.info("Starting Protobuf Buffers Language Server...");
 
 connection.onInitialize((params: InitializeParams) => {
 	const capabilities = params.capabilities;
@@ -68,7 +68,8 @@ connection.onInitialize((params: InitializeParams) => {
 });
 
 connection.onInitialized(() => {
-	log("Protobuf Buffers Language Server initialized.");
+	logger.info("Protobuf Buffers Language Server initialized.");
+
 	if (hasConfigurationCapability) {
 		// Register for all configuration changes.
 		connection.client.register(DidChangeConfigurationNotification.type, undefined);
