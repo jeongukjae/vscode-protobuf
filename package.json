@@ -22,6 +22,12 @@
   ],
 	"main": "./client/out/extension.js",
   "contributes": {
+    "configuration": {
+			"type": "object",
+			"title": "Protocol Buffers Configuration",
+      "properties": {
+      }
+    },
     "commands": [
       {
         "command": "protobuf.helloWorld",
