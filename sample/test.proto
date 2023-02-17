@@ -1,7 +1,9 @@
 syntax = "proto3";
 
+import "sample.proto";
+
 message SearchRequest {
   string query = 1;
-  int32 page_number = 2;
+  int32 page_number = 2; // comment
   int32 result_per_page = 3;
 }
