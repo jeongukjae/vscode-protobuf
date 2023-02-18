@@ -87,6 +87,28 @@ describe('Tokenizer', () => {
         });
     });
 
+    describe("String", () => {
+        [
+            { name: "double quote", input: '"this is a string"' },
+            { name: "single quote", input: "'this is a string'" },
+            { name: "hex escape", input: "'this is a \\x0A string'" },
+            { name: "octal escape", input: "'this is a \\012 string'" },
+            { name: "char escape", input: "'this is a \\n string'" },
+            { name: "quote scape", input: "'this is a \\' string'" },
+            { name: "backslash escape", input: "'this is a \\\\ string'" },
+        ].forEach((test) => {
+            it(`should tokenize a string: ${test.name}`, () => {
+                const tokenizer = new Proto3Tokenizer();
+                const tokens = tokenizer.tokenize(test.input);
+
+                expect(tokens.length).to.equal(1);
+                expect(tokens[0].type).to.equal(TokenType.string);
+                expect(tokens[0].start).to.equal(0);
+                expect(tokens[0].length).to.equal(test.input.length);
+            });
+        });
+    });
+
     describe("Number", () => {
         [
             { name: "basic case", input: '0' },

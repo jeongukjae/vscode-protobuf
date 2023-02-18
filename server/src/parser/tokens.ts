@@ -14,6 +14,7 @@ export const enum TokenType {
     closeBracket,
     openBrace,
     closeBrace,
+    dot,
     comment, // special token type for convenience
 }
 

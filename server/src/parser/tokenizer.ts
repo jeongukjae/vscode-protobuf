@@ -57,6 +57,11 @@ export class Proto3Tokenizer {
                 }
                 return;
             }
+            case Char.SingleQuote:
+            case Char.DoubleQuote: {
+                this._handleString(ctx);
+                return;
+            }
             case Char.OpenParenthesis: {
                 ctx.tokens.push(Token.create(TokenType.openParenthesis, ctx.chstream.position, 1));
                 ctx.chstream.moveNext();
@@ -103,6 +108,13 @@ export class Proto3Tokenizer {
                         return;
                     }
                 }
+
+                // Dot should be handled after number because float literal can start with dot.
+                if (ctx.chstream.getCurrentChar() === Char.Period) {
+                    ctx.tokens.push(Token.create(TokenType.dot, ctx.chstream.position, 1));
+                    ctx.chstream.moveNext();
+                    return;
+                }
             }
         }
     }
@@ -130,6 +142,26 @@ export class Proto3Tokenizer {
         const length = ctx.chstream.position - start;
         const comment = new Comment(start, length, true, ctx.chstream.text.substring(start, start + length));
         ctx.tokens.push(comment);
+    }
+
+    private _handleString(ctx: TokenizerContext) {
+        const quote = ctx.chstream.getCurrentChar();
+        let start = ctx.chstream.position;
+        ctx.chstream.moveNext();
+
+        while (!ctx.chstream.isEndOfStream()) {
+            if (ctx.chstream.getCurrentChar() === quote) {
+                ctx.chstream.moveNext();
+                break;
+            }
+            if (ctx.chstream.getCurrentChar() === Char.Backslash && ctx.chstream.nextChar === quote) {
+                ctx.chstream.moveNext();
+            }
+            ctx.chstream.moveNext();
+        }
+
+        const length = ctx.chstream.position - start;
+        ctx.tokens.push(Token.create(TokenType.string, start, length));
     }
 
     private _canBeNumber(ctx: TokenizerContext): boolean {
