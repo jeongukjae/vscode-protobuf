@@ -13,7 +13,7 @@ describe('CharacterStream', () => {
         chstream.skipWhitespace();
         expect(chstream.isAtWhitespace()).to.be.false;
         expect(chstream.position).to.equal(2);
-        expect(chstream.currentChar).to.equal("t".charCodeAt(0));
+        expect(chstream.getCurrentChar()).to.equal("t".charCodeAt(0));
     });
 
     it("should be able to skip to linebreak", () => {

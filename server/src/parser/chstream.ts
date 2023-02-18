@@ -1,20 +1,12 @@
 import { isLineBreak, isWhitespace } from "./utils";
 
-export enum Char {
-    slash = "/".charCodeAt(0),
-    backSlash = "\\".charCodeAt(0),
-    asterisk = "*".charCodeAt(0),
-}
-
 export class CharacterStream {
     private _text: string;
     private _position: number;
-    private _currentChar: number;
 
     constructor(text: string) {
         this._text = text;
         this._position = 0;
-        this._currentChar = text.length > 0 ? text.charCodeAt(0) : 0;
     }
 
     get text(): string {
@@ -29,8 +21,18 @@ export class CharacterStream {
         this._position = value;
     }
 
-    get currentChar(): number {
-        return this._currentChar;
+    getCurrentChar(): number {
+        if (this._position >= this._text.length) {
+            return 0;
+        }
+        return this.text.charCodeAt(this._position);
+    }
+
+    get nextChar(): number {
+        if (this._position >= this._text.length - 1) {
+            return 0;
+        }
+        return this.text.charCodeAt(this._position + 1);
     }
 
     isEndOfStream(): boolean {
@@ -52,7 +54,6 @@ export class CharacterStream {
     moveNext(): boolean {
         if (this._position < this._text.length - 1) {
             this._position++;
-            this._currentChar = this.charCodeAt(this._position);
             return true;
         }
 
@@ -61,11 +62,11 @@ export class CharacterStream {
     }
 
     isAtWhitespace(): boolean {
-        return isWhitespace(this._currentChar);
+        return isWhitespace(this.getCurrentChar());
     }
 
     isAtLineBreak(): boolean {
-        return isLineBreak(this._currentChar);
+        return isLineBreak(this.getCurrentChar());
     }
 
     charCodeAt(index: number): number {
@@ -79,7 +80,7 @@ export class CharacterStream {
     }
 
     skipWhitespace() {
-        while (!this.isEndOfStream() && (this.isAtWhitespace() || this.isAtLineBreak())) {
+        while (!this.isEndOfStream() && this.isAtWhitespace()) {
             this.moveNext();
         }
     }

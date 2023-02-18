@@ -9,8 +9,8 @@ export const enum TokenType {
     colon,
     semicolon,
     comma,
-    openParen,
-    closeParen,
+    openParenthesis,
+    closeParenthesis,
     openBracket,
     closeBracket,
     openBrace,
@@ -47,29 +47,51 @@ export interface Token {
     length: number;
 }
 
+export namespace Token {
+    export function create(type: TokenType, start: number, length: number): Token {
+        return { type, start, length };
+    }
+}
+
 export class Comment implements Token {
     type: TokenType = TokenType.comment;
     start: number;
     length: number;
     isBlock: boolean;
+    text: string;
 
-    constructor(start: number, length: number, isBlock: boolean) {
+    constructor(start: number, length: number, isBlock: boolean, text: string) {
         this.start = start;
         this.length = length;
         this.isBlock = isBlock;
+        this.text = text;
     }
+}
 
-    // Merging multiple single line comments?
-    //
-    // merge(other: Comment): Comment {
-    //     if (this.isBlock !== other.isBlock) {
-    //         throw new Error('Cannot merge block comment with line comment');
-    //     }
-    //     if (this.start > other.start) {
-    //         return other.merge(this);
-    //     }
-    //
-    //     this.length = other.start + other.length - this.start;
-    //     return this;
-    // }
+export class IntegerToken implements Token {
+    type: TokenType = TokenType.number;
+    start: number;
+    length: number;
+    text: string;
+    radix: number;
+
+    constructor(start: number, length: number, text: string, radix: number) {
+        this.start = start;
+        this.length = length;
+        this.text = text;
+        this.radix = radix;
+    }
+}
+
+export class FloatToken implements Token {
+    type: TokenType = TokenType.number;
+    start: number;
+    length: number;
+    text: string;
+
+    constructor(start: number, length: number, text: string) {
+        this.start = start;
+        this.length = length;
+        this.text = text;
+    }
 }

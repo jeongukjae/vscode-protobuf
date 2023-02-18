@@ -1,9 +1,21 @@
+import Char from "typescript-char";
+
 export function isWhitespace(charCode: number): boolean {
-    // space (0x20), tab (0x09), form feed (0x0c)
-    return charCode === 0x20 || charCode === 0x09 || charCode === 0x0c;
+    return charCode === Char.Space || charCode === Char.Tab || charCode === Char.FormFeed || isLineBreak(charCode);
 }
 
 export function isLineBreak(charCode: number): boolean {
-    // line feed (0x0a), carriage return (0x0d)
-    return charCode === 0x0a || charCode === 0x0d;
+    return charCode === Char.LineFeed || charCode === Char.CarriageReturn;
+}
+
+export function isDecimal(charCode: number): boolean {
+    return charCode >= Char._0 && charCode <= Char._9;
+}
+
+export function isHex(charCode: number): boolean {
+    return isDecimal(charCode) || (charCode >= Char.a && charCode <= Char.f) || (charCode >= Char.A && charCode <= Char.F);
+}
+
+export function isOctal(charCode: number): boolean {
+    return charCode >= Char._0 && charCode <= Char._7;
 }

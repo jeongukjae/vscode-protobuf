@@ -865,6 +865,11 @@ type-detect@^4.0.0, type-detect@^4.0.5:
   resolved "https://registry.yarnpkg.com/type-detect/-/type-detect-4.0.8.tgz#7646fb5f18871cfbb7749e69bd39a6388eb7450c"
   integrity sha512-0fr/mIH1dlO+x7TlcMy+bIDqKPsw/70tVyeHW787goQjhmqaZe10uwLujubK9q9Lg6Fiho1KUKDYz0Z7k7g5/g==
 
+typescript-char@^0.0.0:
+  version "0.0.0"
+  resolved "https://registry.yarnpkg.com/typescript-char/-/typescript-char-0.0.0.tgz#558feda737c765a610b737eefbb1775ee9bc8dab"
+  integrity sha512-xa7uRnqfPNgvLC5tC0b5KMoY1YanfaKQy7oEBuPnBA+J9TpkiW3JvmUlKiIcErBZqQ7VzPhPCvElMXnviQiVDw==
+
 util-deprecate@^1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
