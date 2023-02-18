@@ -6,7 +6,6 @@ export const enum TokenType {
     number,
     identifier,
     keyword,
-    colon,
     semicolon,
     comma,
     openParenthesis,
@@ -15,7 +14,6 @@ export const enum TokenType {
     closeBracket,
     openBrace,
     closeBrace,
-    dot,
     comment, // special token type for convenience
 }
 

@@ -77,6 +77,26 @@ export class Proto3Tokenizer {
                 ctx.chstream.moveNext();
                 return;
             }
+            case Char.OpenBracket: {
+                ctx.tokens.push(Token.create(TokenType.openBracket, ctx.chstream.position, 1));
+                ctx.chstream.moveNext();
+                return;
+            }
+            case Char.CloseBracket: {
+                ctx.tokens.push(Token.create(TokenType.closeBracket, ctx.chstream.position, 1));
+                ctx.chstream.moveNext();
+                return;
+            }
+            case Char.Semicolon: {
+                ctx.tokens.push(Token.create(TokenType.semicolon, ctx.chstream.position, 1));
+                ctx.chstream.moveNext();
+                return;
+            }
+            case Char.Comma: {
+                ctx.tokens.push(Token.create(TokenType.comma, ctx.chstream.position, 1));
+                ctx.chstream.moveNext();
+                return;
+            }
             default: {
                 if (this._canBeNumber(ctx)) {
                     if (this._maybeHandleNumber(ctx)) {
