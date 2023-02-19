@@ -1,8 +1,8 @@
 // tokenizer.ts is for tokenizing the input string into tokens.
 
 import { CharacterStream } from "./chstream";
-import { Comment, FloatToken, IntegerToken, Token, TokenType } from "./tokens";
-import { isDecimal, isHex, isOctal } from "./utils";
+import { BooleanToken, Comment, FloatToken, IntegerToken, keywordMap, KeywordToken, Token, TokenType } from "./tokens";
+import { canBeIdentifier, canBeStartIdentifier, isDecimal, isHex, isOctal } from "./utils";
 import Char from 'typescript-char';
 
 
@@ -92,6 +92,16 @@ export class Proto3Tokenizer {
                 ctx.chstream.moveNext();
                 return;
             }
+            case Char.Less: {
+                ctx.tokens.push(Token.create(TokenType.less, ctx.chstream.position, 1));
+                ctx.chstream.moveNext();
+                return;
+            }
+            case Char.Greater: {
+                ctx.tokens.push(Token.create(TokenType.greater, ctx.chstream.position, 1));
+                ctx.chstream.moveNext();
+                return;
+            }
             case Char.Semicolon: {
                 ctx.tokens.push(Token.create(TokenType.semicolon, ctx.chstream.position, 1));
                 ctx.chstream.moveNext();
@@ -99,6 +109,11 @@ export class Proto3Tokenizer {
             }
             case Char.Comma: {
                 ctx.tokens.push(Token.create(TokenType.comma, ctx.chstream.position, 1));
+                ctx.chstream.moveNext();
+                return;
+            }
+            case Char.Equal: {
+                ctx.tokens.push(Token.create(TokenType.operator, ctx.chstream.position, 1));
                 ctx.chstream.moveNext();
                 return;
             }
@@ -115,6 +130,13 @@ export class Proto3Tokenizer {
                     ctx.chstream.moveNext();
                     return;
                 }
+
+                // nan, inf, true, and false are handled in _maybeHandleIdentifierAndKeyword.
+                if (this._maybeHandleIdentifierAndKeyword(ctx)) {
+                    return;
+                }
+
+                this._handleInvalid(ctx);
             }
         }
     }
@@ -250,6 +272,44 @@ export class Proto3Tokenizer {
         }
 
         ctx.tokens.push(new FloatToken(start, ctx.chstream.position - start, ctx.chstream.text.substring(start, ctx.chstream.position)));
+        return true;
+    }
+
+    private _maybeHandleIdentifierAndKeyword(ctx: TokenizerContext): boolean {
+        const start = ctx.chstream.position;
+        if (!canBeStartIdentifier(ctx.chstream.getCurrentChar())) {
+            return false;
+        }
+
+        ctx.chstream.moveNext();
+        while (canBeIdentifier(ctx.chstream.getCurrentChar())) {
+            ctx.chstream.moveNext();
+        }
+
+        const length = ctx.chstream.position - start;
+        const text = ctx.chstream.text.substring(start, start + length);
+
+        if (text === 'nan') {
+            ctx.tokens.push(new FloatToken(start, length, text));
+        } else if (text === 'inf') {
+            ctx.tokens.push(new FloatToken(start, length, text));
+        } else if (text === 'true') {
+            ctx.tokens.push(new BooleanToken(start, length, text));
+        } else if (text === 'false') {
+            ctx.tokens.push(new BooleanToken(start, length, text));
+        } else if (text in keywordMap) {
+            const tokenType = keywordMap[text];
+            ctx.tokens.push(new KeywordToken(start, length, text, tokenType));
+        } else {
+            ctx.tokens.push(Token.create(TokenType.identifier, start, length));
+        }
+
+        return true;
+    }
+
+    private _handleInvalid(ctx: TokenizerContext): boolean {
+        ctx.tokens.push(Token.create(TokenType.invalid, ctx.chstream.position, 1));
+        ctx.chstream.moveNext();
         return true;
     }
 }

@@ -19,3 +19,11 @@ export function isHex(charCode: number): boolean {
 export function isOctal(charCode: number): boolean {
     return charCode >= Char._0 && charCode <= Char._7;
 }
+
+export function canBeStartIdentifier(charCode: number): boolean {
+    return (charCode >= Char.a && charCode <= Char.z) || (charCode >= Char.A && charCode <= Char.Z) || charCode === Char.Underscore;
+}
+
+export function canBeIdentifier(charCode: number): boolean {
+    return (charCode >= Char.a && charCode <= Char.z) || (charCode >= Char.A && charCode <= Char.Z) || isDecimal(charCode) ||  charCode === Char.Underscore;
+}

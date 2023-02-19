@@ -1,11 +1,11 @@
 export const enum TokenType {
     invalid,
-    endOfStream,
-    newLine,
     string,
     number,
+    boolean,
     identifier,
     keyword,
+    operator,
     semicolon,
     comma,
     openParenthesis,
@@ -14,6 +14,8 @@ export const enum TokenType {
     closeBracket,
     openBrace,
     closeBrace,
+    less,
+    greater,
     dot,
     comment, // special token type for convenience
 }
@@ -32,13 +34,29 @@ export const enum KeywordType {
     returns,
     oneof,
     repeated,
+    map,
     reserved,
     to, // e.g. "reserved 1 to 15;"
-    true,
-    false,
-    inf,
-    nan,
 }
+
+export const keywordMap: { [key: string]: KeywordType } = {
+    syntax: KeywordType.syntax,
+    import: KeywordType.import,
+    public: KeywordType.public,
+    weak: KeywordType.weak,
+    package: KeywordType.package,
+    option: KeywordType.option,
+    message: KeywordType.message,
+    enum: KeywordType.enum,
+    service: KeywordType.service,
+    rpc: KeywordType.rpc,
+    returns: KeywordType.returns,
+    oneof: KeywordType.oneof,
+    repeated: KeywordType.repeated,
+    map: KeywordType.map,
+    reserved: KeywordType.reserved,
+    to: KeywordType.to,
+};
 
 export interface Token {
     type: TokenType;
@@ -92,5 +110,33 @@ export class FloatToken implements Token {
         this.start = start;
         this.length = length;
         this.text = text;
+    }
+}
+
+export class BooleanToken implements Token {
+    type: TokenType = TokenType.boolean;
+    start: number;
+    length: number;
+    text: string;
+
+    constructor(start: number, length: number, text: string) {
+        this.start = start;
+        this.length = length;
+        this.text = text;
+    }
+}
+
+export class KeywordToken implements Token {
+    type: TokenType = TokenType.keyword;
+    start: number;
+    length: number;
+    text: string;
+    keyword: KeywordType;
+
+    constructor(start: number, length: number, text: string, keyword: KeywordType) {
+        this.start = start;
+        this.length = length;
+        this.text = text;
+        this.keyword = keyword;
     }
 }
