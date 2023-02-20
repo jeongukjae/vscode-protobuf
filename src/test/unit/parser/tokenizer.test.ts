@@ -1,6 +1,6 @@
 import {expect} from 'chai';
-import {Proto3Tokenizer} from '../../src/parser/tokenizer';
-import { Comment, IntegerToken, FloatToken, TokenType, BooleanToken, Token, KeywordToken, KeywordType, PrimitiveTypeToken, PrimitiveType } from '../../src/parser/tokens';
+import {Proto3Tokenizer} from '../../../parser/tokenizer';
+import { Comment, IntegerToken, FloatToken, TokenType, BooleanToken, Token, KeywordToken, KeywordType, PrimitiveTypeToken, PrimitiveType } from '../../../parser/tokens';
 
 describe('Tokenizer', () => {
     it("should tokenize", () => {

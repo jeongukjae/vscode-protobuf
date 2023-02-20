@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {Proto3Parser} from '../../src/parser/parser';
+import {Proto3Parser} from '../../../parser/parser';
 
 describe('Parser', () => {
     [

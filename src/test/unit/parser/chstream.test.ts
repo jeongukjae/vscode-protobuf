@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {CharacterStream} from '../../src/parser/chstream';
+import {CharacterStream} from '../../../parser/chstream';
 
 describe('CharacterStream', () => {
     it("should be able to move forward", () => {
