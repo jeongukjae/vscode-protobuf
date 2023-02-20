@@ -83,7 +83,8 @@
         ],
         "aliases": [
           "Protocol Buffers 3"
-        ]
+        ],
+        "configuration": "./languages/protobuf3.language-configuration.json"
       },
       {
         "id": "textproto",
