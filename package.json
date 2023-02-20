@@ -22,7 +22,31 @@
     "configuration": {
       "type": "object",
       "title": "Protocol Buffers Configuration",
-      "properties": {}
+      "properties": {
+        "protobuf.format.provider": {
+          "type": "string",
+          "default": "clang-format",
+          "enum": [
+            "clang-format"
+          ],
+          "description": "The formatter to use for formatting Protocol Buffers 3 files.",
+          "scope": "resource"
+        },
+        "protobuf.clang-format.executable": {
+          "type": "string",
+          "default": "clang-format",
+          "description": "The path to the clang-format executable.",
+          "scope": "resource"
+        },
+        "protobuf.clang-format.arguments": {
+          "type": "array",
+          "default": [
+            "-style=google"
+          ],
+          "description": "The arguments to pass to clang-format.",
+          "scope": "resource"
+        }
+      }
     },
     "commands": [
       {
