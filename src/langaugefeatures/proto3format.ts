@@ -4,7 +4,7 @@ import { isCommandAvailable, isExecutableFileAvailable } from '../utils';
 
 export const proto3FormatProvider: vscode.DocumentFormattingEditProvider = {
     provideDocumentFormattingEdits(document: vscode.TextDocument, options: vscode.FormattingOptions, token: vscode.CancellationToken): vscode.TextEdit[] {
-        const formatOption = vscode.workspace.getConfiguration('protobuf.format');
+        const formatOption = vscode.workspace.getConfiguration('protobuf3.format');
         if (formatOption.get('provider', "clang-format") === "clang-format") {
             return formatUsingClangFormat(document);
         }
@@ -15,7 +15,7 @@ export const proto3FormatProvider: vscode.DocumentFormattingEditProvider = {
 };
 
 function formatUsingClangFormat(document: vscode.TextDocument): vscode.TextEdit[] {
-    const clangFormatOption = vscode.workspace.getConfiguration('protobuf.clang-format');
+    const clangFormatOption = vscode.workspace.getConfiguration('protobuf3.clang-format');
     const clangFormatPath = clangFormatOption.get('executable', 'clang-format');
 
     if (!(isCommandAvailable(clangFormatPath) || isExecutableFileAvailable(clangFormatPath))) {
