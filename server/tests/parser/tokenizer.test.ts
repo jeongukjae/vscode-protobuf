@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import {Proto3Tokenizer} from '../../src/parser/tokenizer';
-import { Comment, IntegerToken, FloatToken, TokenType, BooleanToken, Token, KeywordToken, KeywordType } from '../../src/parser/tokens';
+import { Comment, IntegerToken, FloatToken, TokenType, BooleanToken, Token, KeywordToken, KeywordType, PrimitiveTypeToken, PrimitiveType } from '../../src/parser/tokens';
 
 describe('Tokenizer', () => {
     it("should tokenize", () => {
@@ -100,7 +100,7 @@ message Outer {
             Token.create(TokenType.identifier, 335, 5),
             Token.create(TokenType.openBrace, 341, 1),
             new Comment(345, 10, false, "// Level 2"),
-            Token.create(TokenType.identifier, 364, 5),
+            new PrimitiveTypeToken(364, 5, PrimitiveType.int64),
             Token.create(TokenType.identifier, 370, 4),
             Token.create(TokenType.operator, 375, 1),
             new IntegerToken(377, 1, "1", 10),
@@ -119,9 +119,9 @@ message Outer {
             Token.create(TokenType.semicolon, 460, 1),
             new KeywordToken(466, 3, "map", KeywordType.map),
             Token.create(TokenType.less, 469, 1),
-            Token.create(TokenType.identifier, 470, 5),
+            new PrimitiveTypeToken(470, 5, PrimitiveType.int32),
             Token.create(TokenType.comma, 475, 1),
-            Token.create(TokenType.identifier, 477, 6),
+            new PrimitiveTypeToken(477, 6, PrimitiveType.string),
             Token.create(TokenType.greater, 483, 1),
             Token.create(TokenType.identifier, 485, 6),
             Token.create(TokenType.operator, 492, 1),
@@ -131,7 +131,6 @@ message Outer {
         ];
         const tokenizer = new Proto3Tokenizer();
         const tokens = tokenizer.tokenize(input);
-        console.log(tokens);
 
         for (let i = 0; i < Math.min(tokens.length, expectedTokens.length); i++) {
             const token = tokens[i];

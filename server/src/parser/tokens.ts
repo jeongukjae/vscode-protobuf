@@ -5,6 +5,7 @@ export const enum TokenType {
     boolean,
     identifier,
     keyword,
+    primitiveType,
     operator,
     semicolon,
     comma,
@@ -56,6 +57,42 @@ export const keywordMap: { [key: string]: KeywordType } = {
     map: KeywordType.map,
     reserved: KeywordType.reserved,
     to: KeywordType.to,
+};
+
+export const enum PrimitiveType {
+    double,
+    float,
+    int32,
+    int64,
+    uint32,
+    uint64,
+    sint32,
+    sint64,
+    fixed32,
+    fixed64,
+    sfixed32,
+    sfixed64,
+    bool,
+    string,
+    bytes,
+}
+
+export const primitiveTypeMap: { [key: string]: PrimitiveType } = {
+    double: PrimitiveType.double,
+    float: PrimitiveType.float,
+    int32: PrimitiveType.int32,
+    int64: PrimitiveType.int64,
+    uint32: PrimitiveType.uint32,
+    uint64: PrimitiveType.uint64,
+    sint32: PrimitiveType.sint32,
+    sint64: PrimitiveType.sint64,
+    fixed32: PrimitiveType.fixed32,
+    fixed64: PrimitiveType.fixed64,
+    sfixed32: PrimitiveType.sfixed32,
+    sfixed64: PrimitiveType.sfixed64,
+    bool: PrimitiveType.bool,
+    string: PrimitiveType.string,
+    bytes: PrimitiveType.bytes,
 };
 
 export interface Token {
@@ -138,5 +175,18 @@ export class KeywordToken implements Token {
         this.length = length;
         this.text = text;
         this.keyword = keyword;
+    }
+}
+
+export class PrimitiveTypeToken implements Token {
+    type: TokenType = TokenType.primitiveType;
+    start: number;
+    length: number;
+    primitiveType: PrimitiveType;
+
+    constructor(start: number, length: number, primitiveType: PrimitiveType) {
+        this.start = start;
+        this.length = length;
+        this.primitiveType = primitiveType;
     }
 }

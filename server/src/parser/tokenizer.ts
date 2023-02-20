@@ -1,7 +1,7 @@
 // tokenizer.ts is for tokenizing the input string into tokens.
 
 import { CharacterStream } from "./chstream";
-import { BooleanToken, Comment, FloatToken, IntegerToken, keywordMap, KeywordToken, Token, TokenType } from "./tokens";
+import { BooleanToken, Comment, FloatToken, IntegerToken, keywordMap, KeywordToken, primitiveTypeMap, PrimitiveTypeToken, Token, TokenType } from "./tokens";
 import { canBeIdentifier, canBeStartIdentifier, isDecimal, isHex, isOctal } from "./utils";
 import Char from 'typescript-char';
 
@@ -297,6 +297,9 @@ export class Proto3Tokenizer {
             ctx.tokens.push(new BooleanToken(start, length, text));
         } else if (text === 'false') {
             ctx.tokens.push(new BooleanToken(start, length, text));
+        } else if (text in primitiveTypeMap) {
+            const tokenType = primitiveTypeMap[text];
+            ctx.tokens.push(new PrimitiveTypeToken(start, length, tokenType));
         } else if (text in keywordMap) {
             const tokenType = keywordMap[text];
             ctx.tokens.push(new KeywordToken(start, length, text, tokenType));
