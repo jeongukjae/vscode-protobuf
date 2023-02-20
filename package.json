@@ -103,6 +103,11 @@
     ],
     "grammars": [
       {
+        "language": "protobuf3",
+        "scopeName": "source.protobuf3",
+        "path": "./syntaxes/protobuf3.tmLanguage.json"
+      },
+      {
         "language": "textproto",
         "scopeName": "source.textproto",
         "path": "./syntaxes/textproto.tmLanguage.json"

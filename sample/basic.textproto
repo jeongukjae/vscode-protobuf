@@ -1,0 +1,9 @@
+inner_message {
+  ival: 123;
+}
+
+enum_field: EAA_RUNNING
+my_map {
+  key: "key1"
+  value: "value1"
+}
