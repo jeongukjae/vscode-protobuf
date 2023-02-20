@@ -45,6 +45,27 @@
           ],
           "description": "The arguments to pass to clang-format.",
           "scope": "resource"
+        },
+        "textproto.format.provider": {
+          "type": "string",
+          "default": "txtpbfmt",
+          "enum": [
+            "txtpbfmt"
+          ],
+          "description": "The formatter to use for formatting Protocol Buffers Text Format files.",
+          "scope": "resource"
+        },
+        "textproto.txtpbfmt.executable": {
+          "type": "string",
+          "default": "txtpbfmt",
+          "description": "The path to the txtpbfmt executable.",
+          "scope": "resource"
+        },
+        "textproto.txtpbfmt.arguments": {
+          "type": "array",
+          "default": [],
+          "description": "The arguments to pass to txtpbfmt.",
+          "scope": "resource"
         }
       }
     },

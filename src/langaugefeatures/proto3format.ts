@@ -19,7 +19,7 @@ function formatUsingClangFormat(document: vscode.TextDocument): vscode.TextEdit[
     const clangFormatPath = clangFormatOption.get('executable', 'clang-format');
 
     if (!(isCommandAvailable(clangFormatPath) || isExecutableFileAvailable(clangFormatPath))) {
-        vscode.window.showErrorMessage(`clang-format executable not found: ${clangFormatPath}`);
+        vscode.window.showErrorMessage(`clang-format (path: ${clangFormatPath}) executable not found.\nCheck your PATH or install clang-format.\nYou can install it with apt, homebrew or other package managers.`);
         return [];
     }
 
