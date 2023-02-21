@@ -23,6 +23,27 @@
       "type": "object",
       "title": "Protocol Buffers Configuration",
       "properties": {
+        "protobuf3.compiler.provider": {
+          "type": "string",
+          "default": "protoc",
+          "enum": [
+            "protoc"
+          ],
+          "description": "The compiler to use for compiling Protocol Buffers 3 files.",
+          "scope": "resource"
+        },
+        "protobuf3.protoc.executable": {
+          "type": "string",
+          "default": "protoc",
+          "description": "The path to the protoc executable.",
+          "scope": "resource"
+        },
+        "protobuf3.protoc.arguments": {
+          "type": "array",
+          "default": [],
+          "description": "The arguments to pass to protoc.",
+          "scope": "resource"
+        },
         "protobuf3.format.provider": {
           "type": "string",
           "default": "clang-format",
