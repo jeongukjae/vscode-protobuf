@@ -9,7 +9,7 @@ import { isCommandAvailable, isExecutableFileAvailable } from '../utils';
 
 export const doProto3Diagnostic = (document: vscode.TextDocument, diag: vscode.DiagnosticCollection) => {
     const protoCompilerOption = vscode.workspace.getConfiguration('protobuf3.compiler');
-    const protoCompiler = protoCompilerOption.get('provider', 'protoc');
+    const protoCompiler = protoCompilerOption.get('provider');
 
     if (protoCompiler === 'protoc') {
         compileTempWithProtoc(document, diag);
@@ -68,7 +68,7 @@ function compileTempWithBuf(document: vscode.TextDocument, diag: vscode.Diagnost
         return;
     }
 
-    let args = ["build"];
+    let args = ["build"]; // TODO: check differences between "build" and "lint"
     // TODO: arguments?
 
     args.push(document.fileName);
