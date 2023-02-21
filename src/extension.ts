@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { proto3FormatProvider } from './langaugefeatures/proto3format';
+import { proto3FormatProvider } from './langaugefeatures/proto3Format';
 import { textprotoFormatProvider } from './langaugefeatures/textprotoFormat';
 
 export function activate(context: vscode.ExtensionContext) {
