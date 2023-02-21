@@ -27,9 +27,30 @@
           "type": "string",
           "default": "protoc",
           "enum": [
-            "protoc"
+            "protoc",
+            "buf"
           ],
           "description": "The compiler to use for compiling Protocol Buffers 3 files.",
+          "scope": "resource"
+        },
+        "protobuf3.format.provider": {
+          "type": "string",
+          "default": "clang-format",
+          "enum": [
+            "clang-format",
+            "buf"
+          ],
+          "description": "The formatter to use for formatting Protocol Buffers 3 files.",
+          "scope": "resource"
+        },
+        "protobuf3.lint.provider": {
+          "type": "string",
+          "default": "",
+          "enum": [
+            "",
+            "buf"
+          ],
+          "description": "The linter to use for linting Protocol Buffers 3 files.",
           "scope": "resource"
         },
         "protobuf3.protoc.executable": {
@@ -44,13 +65,10 @@
           "description": "The arguments to pass to protoc.",
           "scope": "resource"
         },
-        "protobuf3.format.provider": {
+        "protobuf3.buf.executable": {
           "type": "string",
-          "default": "clang-format",
-          "enum": [
-            "clang-format"
-          ],
-          "description": "The formatter to use for formatting Protocol Buffers 3 files.",
+          "default": "buf",
+          "description": "The path to the buf executable.",
           "scope": "resource"
         },
         "protobuf3.clang-format.executable": {
@@ -67,6 +85,7 @@
           "description": "The arguments to pass to clang-format.",
           "scope": "resource"
         },
+
         "textproto.format.provider": {
           "type": "string",
           "default": "txtpbfmt",

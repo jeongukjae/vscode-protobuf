@@ -13,6 +13,8 @@ export const doProto3Diagnostic = (document: vscode.TextDocument, diag: vscode.D
 
     if (protoCompiler === 'protoc') {
         compileTempWithProtoc(document, diag);
+    } else if (protoCompiler === 'buf') {
+        compileTempWithBuf(document, diag);
     } else {
         vscode.window.showErrorMessage(`Unknown proto compiler: ${protoCompiler}`);
     }
@@ -57,6 +59,40 @@ function compileTempWithProtoc(document: vscode.TextDocument, diag: vscode.Diagn
     diag.set(document.uri, diagnostics);
 }
 
+function compileTempWithBuf(document: vscode.TextDocument, diag: vscode.DiagnosticCollection) {
+    const bufOption = vscode.workspace.getConfiguration('protobuf3.buf');
+    const bufPath = bufOption.get('executable', 'buf');
+
+    if (!(isCommandAvailable(bufPath) || isExecutableFileAvailable(bufPath))) {
+        vscode.window.showErrorMessage(`buf (path: ${bufPath}) executable not found.\nCheck your PATH or install buf.`);
+        return;
+    }
+
+    let args = ["build"];
+    // TODO: arguments?
+
+    args.push(document.fileName);
+
+    let cwd = vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath;
+    if (!cwd) {
+        cwd = os.tmpdir();
+    }
+
+    let result = cp.spawnSync(bufPath, args, { cwd: cwd });
+    if (result.status === 0 || result.stderr.toString().length === 0) {
+        return; // no error
+    }
+
+    let stderr = result.stderr.toString();
+    let shortFileName = path.parse(document.fileName).name;
+    const diagnostics: vscode.Diagnostic[] = stderr.split('\n')
+        .filter(line => line.includes(shortFileName))
+        .map((lineString) => bufErrorToDiagnostic(document, lineString))
+        .filter((diag): diag is vscode.Diagnostic => diag !== null);
+
+    diag.set(document.uri, diagnostics);
+}
+
 function protocErrorToDiagnostic(doc: vscode.TextDocument, errline: string): vscode.Diagnostic|null {
     let errorInfo = errline.match(/\w+\.proto:(\d+):(\d+):\s*(.*)/);
     if (!errorInfo) {
@@ -82,6 +118,25 @@ function protocErrorToDiagnostic(doc: vscode.TextDocument, errline: string): vsc
         endChar = startChar + tokenEnd.index;
     }
     let range = new vscode.Range(startLine, startChar, startLine, endChar);
+    let msg = errorInfo[3];
+    return new vscode.Diagnostic(range, msg, vscode.DiagnosticSeverity.Error);
+}
+
+function bufErrorToDiagnostic(doc: vscode.TextDocument, errline: string): vscode.Diagnostic|null {
+    let errorInfo = errline.match(/\w+\.proto:(\d+):(\d+):(.*)/);
+    if (!errorInfo) {
+        return null;
+    }
+    let startLine = parseInt(errorInfo[1]) - 1;
+    let startCol = parseInt(errorInfo[2]) - 1;
+
+    let line = doc.lineAt(startLine);
+    let endCol = line.text.length;
+    let tokenEnd = line.text.substring(startCol).match(/[\s;{}\[\],<>()=]/);
+    if (tokenEnd !== undefined && tokenEnd !== null && tokenEnd.index !== undefined) {
+        endCol = startCol + tokenEnd.index;
+    }
+    let range = new vscode.Range(startLine, startCol, startLine, endCol);
     let msg = errorInfo[3];
     return new vscode.Diagnostic(range, msg, vscode.DiagnosticSeverity.Error);
 }

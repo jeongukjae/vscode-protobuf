@@ -11,6 +11,7 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.workspace.onDidOpenTextDocument((document) => {
 		if (document.languageId === 'protobuf3') {
 			doProto3Diagnostic(document, diagnostics);
+			// TODO: lint with buf
 		}
 	});
 	vscode.workspace.onDidSaveTextDocument((document) => {
