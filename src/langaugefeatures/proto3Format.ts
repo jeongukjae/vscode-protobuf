@@ -51,7 +51,9 @@ function formatUsingBuf(document: vscode.TextDocument): vscode.TextEdit[] {
     }
 
     let args = ["format"];
-    // TODO: arguments?
+    bufOption.get('arguments', []).forEach((arg: string) => {
+        args.push(arg);
+    });
 
     let cwd = vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath;
     if (!cwd) {

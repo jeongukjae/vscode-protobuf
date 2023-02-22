@@ -71,6 +71,12 @@
           "description": "The path to the buf executable.",
           "scope": "resource"
         },
+        "protobuf3.buf.arguments": {
+          "type": "array",
+          "default": [],
+          "description": "The arguments to pass to buf.",
+          "scope": "resource"
+        },
         "protobuf3.clang-format.executable": {
           "type": "string",
           "default": "clang-format",

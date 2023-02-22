@@ -1,6 +1,3 @@
-// Slightly modified from https://github.com/zxh0/vscode-proto3/blob/master/src/proto3Diagnostic.ts
-// Big thanks to zxh0 for the original code!
-
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as cp from 'child_process';
@@ -21,6 +18,8 @@ export const doProto3Diagnostic = (document: vscode.TextDocument, diag: vscode.D
 };
 
 function compileTempWithProtoc(document: vscode.TextDocument, diag: vscode.DiagnosticCollection) {
+    // Slightly modified from https://github.com/zxh0/vscode-proto3/blob/master/src/proto3Diagnostic.ts
+    // Big thanks to zxh0 for the original code!
     const protocOption = vscode.workspace.getConfiguration('protobuf3.protoc');
     const protocPath = protocOption.get('executable', 'protoc');
 
@@ -68,26 +67,32 @@ function compileTempWithBuf(document: vscode.TextDocument, diag: vscode.Diagnost
         return;
     }
 
-    let args = ["build"]; // TODO: check differences between "build" and "lint"
-    // TODO: arguments?
+    let args = ["lint"];
+    bufOption.get('arguments', []).forEach((arg: string) => {
+        args.push(arg);
+    });
 
-    args.push(document.fileName);
+    args.push(document.fileName + "#include_package_files=true");
+    args.push("--error-format=json");
 
     let cwd = vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath;
     if (!cwd) {
         cwd = os.tmpdir();
     }
 
-    let result = cp.spawnSync(bufPath, args, { cwd: cwd });
-    if (result.status === 0 || result.stderr.toString().length === 0) {
-        return; // no error
+    let result = cp.spawnSync(bufPath, args, { cwd: cwd, encoding: "utf-8" });
+    if (result.error !== undefined) {
+        vscode.window.showErrorMessage(`buf (path: ${bufPath}) failed to run.\n${result.error.message}`);
+        return;
+    }
+    if (result.status !== null && result.status === 0) {
+        return;
     }
 
-    let stderr = result.stderr.toString();
-    let shortFileName = path.parse(document.fileName).name;
-    const diagnostics: vscode.Diagnostic[] = stderr.split('\n')
-        .filter(line => line.includes(shortFileName))
-        .map((lineString) => bufErrorToDiagnostic(document, lineString))
+    const diagnostics: vscode.Diagnostic[] = result.stdout.trim()
+        .split("\n")
+        .map((lineString) => JSON.parse(lineString))
+        .map((line) => bufErrorToDiagnostic(document, line))
         .filter((diag): diag is vscode.Diagnostic => diag !== null);
 
     diag.set(document.uri, diagnostics);
@@ -122,21 +127,29 @@ function protocErrorToDiagnostic(doc: vscode.TextDocument, errline: string): vsc
     return new vscode.Diagnostic(range, msg, vscode.DiagnosticSeverity.Error);
 }
 
-function bufErrorToDiagnostic(doc: vscode.TextDocument, errline: string): vscode.Diagnostic|null {
-    let errorInfo = errline.match(/\w+\.proto:(\d+):(\d+):(.*)/);
-    if (!errorInfo) {
-        return null;
-    }
-    let startLine = parseInt(errorInfo[1]) - 1;
-    let startCol = parseInt(errorInfo[2]) - 1;
+/* eslint-disable @typescript-eslint/naming-convention */
+interface BufError {
+    path: string;
+    start_line: number;
+    start_column: number;
+    end_line: number;
+    end_column: number;
+    type: string;
+    message: string;
+}
 
-    let line = doc.lineAt(startLine);
-    let endCol = line.text.length;
-    let tokenEnd = line.text.substring(startCol).match(/[\s;{}\[\],<>()=]/);
-    if (tokenEnd !== undefined && tokenEnd !== null && tokenEnd.index !== undefined) {
-        endCol = startCol + tokenEnd.index;
+function bufErrorToDiagnostic(doc: vscode.TextDocument, err: BufError): vscode.Diagnostic|null {
+    let [startLine, startCol] = [err.start_line - 1, err.start_column - 1];
+    let [endLine, endCol] = [err.end_line - 1, err.end_column - 1];
+
+    if (endLine === startLine) {
+        let line = doc.lineAt(startLine);
+        endCol = line.text.length;
+        let tokenEnd = line.text.substring(startCol).match(/[\s;{}\[\],<>()=]/);
+        if (tokenEnd !== undefined && tokenEnd !== null && tokenEnd.index !== undefined) {
+            endCol = startCol + tokenEnd.index;
+        }
     }
-    let range = new vscode.Range(startLine, startCol, startLine, endCol);
-    let msg = errorInfo[3];
-    return new vscode.Diagnostic(range, msg, vscode.DiagnosticSeverity.Error);
+    let range = new vscode.Range(startLine, startCol, endLine, endCol);
+    return new vscode.Diagnostic(range, err.message, vscode.DiagnosticSeverity.Error);
 }
