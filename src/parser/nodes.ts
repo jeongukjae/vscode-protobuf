@@ -102,6 +102,32 @@ export class OptionNode extends Node {
     }
 }
 
+export class MessageNode extends Node {
+    name: string;
+
+    fields?: FieldNode[];
+    options?: OptionNode[];
+
+    constructor(start: number, length: number, name: string) {
+        super(NodeType.message, start, length);
+        this.name = name;
+    }
+
+    addField(field: FieldNode) {
+        if (!this.fields) {
+            this.fields = [];
+        }
+        this.fields.push(field);
+    }
+
+    addOption(option: OptionNode) {
+        if (!this.options) {
+            this.options = [];
+        }
+        this.options.push(option);
+    }
+}
+
 export class FieldNode extends Node {
     name: string;
     number: number;

@@ -1,4 +1,4 @@
-import { CommentNode, DocumentNode, ImportNode, Node, OptionNode, PackageNode, SyntaxNode } from "./nodes";
+import { CommentNode, DocumentNode, ImportNode, MessageNode, Node, OptionNode, PackageNode, SyntaxNode, FieldNode } from "./nodes";
 import { Proto3Tokenizer } from "./tokenizer";
 import { Comment, KeywordToken, KeywordType, Token, TokenType } from "./tokens";
 
@@ -51,7 +51,7 @@ export class TokenStream {
     }
 
     isEndOfStream(): boolean {
-        return this._position >= this._tokens.length;
+        return this._position >= this._tokens.length - 1;
     }
 
     moveNext() {
@@ -79,75 +79,90 @@ export class Proto3Parser {
         let tokens = new Proto3Tokenizer().tokenize(text);
         let document = new DocumentNode(0, text.length);
 
+        if (tokens.length === 0) {
+            return document;
+        }
+
         let ctx = {
             tokenStream: new TokenStream(text, tokens),
             document: document,
             current: document
         };
 
-        for (let token of tokens) {
-            this._handleToken(ctx, token);
-        }
+        do {
+            this._handleToken(ctx);
+            if (ctx.tokenStream.isEndOfStream()) {
+                break;
+            }
+            ctx.tokenStream.moveNext();
+        } while (true);
 
         return document;
     }
 
-    private _handleToken(ctx: ParserContext, token: Token) {
-        switch (token.type) {
+    private _handleToken(ctx: ParserContext) {
+        switch (ctx.tokenStream.getCurrentToken().type) {
             case TokenType.comment: {
-                this._handleComment(ctx, token);
+                this._handleComment(ctx);
                 return;
             }
             case TokenType.keyword: {
-                this._handleKeyword(ctx, token);
+                this._handleKeyword(ctx);
                 return;
             }
         }
     }
 
-    private _handleComment(ctx: ParserContext, token: Token) {
-        let commentToken = token as Comment;
-
+    private _handleComment(ctx: ParserContext) {
+        let commentToken = ctx.tokenStream.getCurrentToken() as Comment;
         let comment = new CommentNode(commentToken.start, commentToken.length, commentToken.text);
+
         comment.setParent(ctx.current);
         ctx.current.add(comment);
     }
 
-    private _handleKeyword(ctx: ParserContext, token: Token) {
-        let keywordToken = token as KeywordToken;
+    private _handleKeyword(ctx: ParserContext) {
+        let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         switch (keywordToken.keyword) {
             case KeywordType.syntax: {
-                let syntax = this._handleSyntax(ctx, keywordToken);
+                let syntax = this._handleSyntax(ctx);
                 syntax.setParent(ctx.current);
                 ctx.current.add(syntax);
                 return;
             }
 
             case KeywordType.package: {
-                let pkg = this._handlePackage(ctx, keywordToken);
+                let pkg = this._handlePackage(ctx);
                 pkg.setParent(ctx.current);
                 ctx.current.add(pkg);
                 return;
             }
 
             case KeywordType.import: {
-                let imp = this._handleImport(ctx, keywordToken);
+                let imp = this._handleImport(ctx);
                 imp.setParent(ctx.current);
                 ctx.current.add(imp);
                 return;
             }
 
             case KeywordType.option: {
-                let option = this._handleOption(ctx, keywordToken);
+                let option = this._handleOption(ctx);
                 option.setParent(ctx.current);
                 ctx.current.add(option);
+                return;
+            }
+
+            case KeywordType.message: {
+                let message = this._handleMessage(ctx);
+                message.setParent(ctx.current);
+                ctx.current.add(message);
                 return;
             }
         }
     }
 
-    private _handleSyntax(ctx: ParserContext, token: KeywordToken): SyntaxNode {
-        let keywordToken = token as KeywordToken;
+    private _handleSyntax(ctx: ParserContext): SyntaxNode {
+        let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         ctx.tokenStream.moveNext();
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.operator && ctx.tokenStream.getCurrentTokenText() !== "=") {
             throw new Error("Expected '=' after 'syntax'");
@@ -162,36 +177,36 @@ export class Proto3Parser {
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
             throw new Error("Expected ';' after the statement");
         }
-        let lastToken = ctx.tokenStream.getCurrentToken();
-        ctx.tokenStream.moveNext();
-        return new SyntaxNode(keywordToken.start, lastToken.start + lastToken.length, "proto3");
+        let semicolon = ctx.tokenStream.getCurrentToken();
+        let length = semicolon.start + semicolon.length - keywordToken.start;
+        return new SyntaxNode(keywordToken.start, length, "proto3");
     }
 
-    private _handlePackage(ctx: ParserContext, token: KeywordToken): PackageNode {
-        let keywordToken = token as KeywordToken;
+    private _handlePackage(ctx: ParserContext): PackageNode {
+        let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         ctx.tokenStream.moveNext();
 
         let path = this._consumeFullIdentifier(ctx, "package");
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
             throw new Error("Expected ';' after the statement");
         }
-        let lastToken = ctx.tokenStream.getCurrentToken();
-        ctx.tokenStream.moveNext();
-        return new PackageNode(keywordToken.start, lastToken.start + lastToken.length, path);
+        let semicolon = ctx.tokenStream.getCurrentToken();
+        let length = semicolon.start + semicolon.length - keywordToken.start;
+        return new PackageNode(keywordToken.start, length, path);
     }
 
-    private _handleImport(ctx: ParserContext, token: KeywordToken): ImportNode {
-        let keywordToken = token as KeywordToken;
+    private _handleImport(ctx: ParserContext): ImportNode {
+        let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         ctx.tokenStream.moveNext();
 
         let modifier: string | undefined = undefined;
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.string) {
             if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
-                throw new Error("Expected package name after 'package'");
+                throw new Error("Expected file path after 'package'");
             }
 
             if (ctx.tokenStream.getCurrentTokenText() !== "public" || ctx.tokenStream.getCurrentTokenText() !== "weak") {
-                throw new Error("Expected package name after 'package'");
+                throw new Error("Expected file path after 'package'");
             }
             modifier = ctx.tokenStream.getCurrentTokenText();
 
@@ -199,21 +214,21 @@ export class Proto3Parser {
         }
 
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.string) {
-            throw new Error("Expected package name after 'package'");
+            throw new Error("Expected file path after 'package'");
         }
         let path = ctx.tokenStream.getCurrentTokenText();
+        ctx.tokenStream.moveNext();
 
-        let lastToken = ctx.tokenStream.getCurrentToken();
-        if (ctx.tokenStream.getNextToken().type !== TokenType.semicolon) {
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
             throw new Error("Expected ';' after the statement");
         }
-
-        ctx.tokenStream.moveNext();
-        return new ImportNode(keywordToken.start, lastToken.start + lastToken.length, path, modifier);
+        let semicolon = ctx.tokenStream.getCurrentToken();
+        let length = semicolon.start + semicolon.length - keywordToken.start;
+        return new ImportNode(keywordToken.start, length, path, modifier);
     }
 
-    private _handleOption(ctx: ParserContext, token: KeywordToken): OptionNode {
-        let keywordToken = token as KeywordToken;
+    private _handleOption(ctx: ParserContext): OptionNode {
+        let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         ctx.tokenStream.moveNext();
 
         let option = "";
@@ -253,10 +268,57 @@ export class Proto3Parser {
             throw new Error("Expected ';' after the statement");
         }
 
-        let lastToken = ctx.tokenStream.getCurrentToken();
+        let semicolon = ctx.tokenStream.getCurrentToken();
+        let length = semicolon.start + semicolon.length - keywordToken.start;
+        return new OptionNode(keywordToken.start, length, option, value);
+    }
+
+    private _handleMessage(ctx: ParserContext): MessageNode {
+        let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         ctx.tokenStream.moveNext();
 
-        return new OptionNode(keywordToken.start, lastToken.start + lastToken.length, option, value);
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+            throw new Error("Expected message name after 'message'");
+        }
+
+        let name = ctx.tokenStream.getCurrentTokenText();
+        ctx.tokenStream.moveNext();
+
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.openBrace) {
+            throw new Error("Expected '{' after the message name");
+        }
+        ctx.tokenStream.moveNext();
+
+        let children: Node[] = [];
+        let options: OptionNode[] = [];
+        let fields: FieldNode[] = [];
+        while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
+            switch (ctx.tokenStream.getCurrentToken().type) {
+                case TokenType.keyword: {
+                    let keyword = ctx.tokenStream.getCurrentTokenText();
+
+                    switch (keyword) {
+                        case "option":
+                            options.push(this._handleOption(ctx));
+                            break;
+                    }
+
+                    break;
+                }
+                case TokenType.semicolon: {
+                    // empty statement
+                    // TODO: add empty statement node?
+                    ctx.tokenStream.moveNext();
+                    break;
+                }
+            }
+        }
+
+        const message = new MessageNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start, name);
+        children.forEach(child => message.add(child));
+        options.forEach(option => message.addOption(option));
+        fields.forEach(field => message.addField(field));
+        return message;
     }
 
     private _consumeFullIdentifier(ctx: ParserContext, prevKeyword: string): string {
@@ -276,8 +338,6 @@ export class Proto3Parser {
             ctx.tokenStream.moveNext();
             ctx.tokenStream.moveNext();
         }
-
-        ctx.tokenStream.moveNext();
 
         return result;
     }
