@@ -143,6 +143,25 @@ message Outer {
         expect(tokens.length).to.equal(expectedTokens.length);
     });
 
+    [
+        {input: '-inf', expected: [new FloatToken(0, 4, '-inf')]},
+    ].forEach((test) => {
+        it(`should tokenize ${test.input}`, () => {
+            const tokenizer = new Proto3Tokenizer();
+            const tokens = tokenizer.tokenize(test.input);
+
+            for (let i = 0; i < tokens.length; i++) {
+                const token = tokens[i];
+                const expected = test.expected[i];
+
+                expect(token.type).to.equal(expected.type, `Token ${i} type`);
+                expect(token.start).to.equal(expected.start, `Token ${i} start`);
+                expect(token.length).to.equal(expected.length, `Token ${i} length`);
+            }
+            expect(tokens.length).to.equal(test.expected.length);
+        });
+    });
+
     describe("Comment", () => {
         it('should tokenize a single line comment', () => {
             const input = '// this is a single line comment';

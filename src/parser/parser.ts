@@ -14,6 +14,10 @@ export class TokenStream {
         this._position = 0;
     }
 
+    get text(): string {
+        return this._text;
+    }
+
     get position(): number {
         return this._position;
     }
@@ -89,6 +93,11 @@ export class Proto3Parser {
             current: document
         };
 
+        this._parse(ctx);
+        return document;
+    }
+
+    private _parse(ctx: ParserContext) {
         do {
             this._handleToken(ctx);
             if (ctx.tokenStream.isEndOfStream()) {
@@ -96,8 +105,6 @@ export class Proto3Parser {
             }
             ctx.tokenStream.moveNext();
         } while (true);
-
-        return document;
     }
 
     private _handleToken(ctx: ParserContext) {
@@ -165,17 +172,17 @@ export class Proto3Parser {
         let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         ctx.tokenStream.moveNext();
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.operator && ctx.tokenStream.getCurrentTokenText() !== "=") {
-            throw new Error("Expected '=' after 'syntax'");
+            throw this._generateError(ctx, "Expected '=' after 'syntax'");
         }
 
         ctx.tokenStream.moveNext();
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.string && ctx.tokenStream.getCurrentTokenText() !== "'proto3'" || ctx.tokenStream.getCurrentTokenText() !== '"proto3"') {
-            throw new Error("Expected 'proto3' after 'syntax ='");
+            throw this._generateError(ctx, "Expected 'proto3' after 'syntax ='");
         }
 
         ctx.tokenStream.moveNext();
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
-            throw new Error("Expected ';' after the statement");
+            throw this._generateError(ctx, "Expected ';' after the statement");
         }
         let semicolon = ctx.tokenStream.getCurrentToken();
         let length = semicolon.start + semicolon.length - keywordToken.start;
@@ -188,7 +195,7 @@ export class Proto3Parser {
 
         let path = this._consumeFullIdentifier(ctx, "package");
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
-            throw new Error("Expected ';' after the statement");
+            throw this._generateError(ctx, "Expected ';' after the statement");
         }
         let semicolon = ctx.tokenStream.getCurrentToken();
         let length = semicolon.start + semicolon.length - keywordToken.start;
@@ -202,11 +209,11 @@ export class Proto3Parser {
         let modifier: string | undefined = undefined;
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.string) {
             if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
-                throw new Error("Expected file path after 'package'");
+                throw this._generateError(ctx, "Expected file path after 'package'");
             }
 
             if (ctx.tokenStream.getCurrentTokenText() !== "public" || ctx.tokenStream.getCurrentTokenText() !== "weak") {
-                throw new Error("Expected file path after 'package'");
+                throw this._generateError(ctx, "Expected file path after 'package'");
             }
             modifier = ctx.tokenStream.getCurrentTokenText();
 
@@ -214,13 +221,13 @@ export class Proto3Parser {
         }
 
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.string) {
-            throw new Error("Expected file path after 'package'");
+            throw this._generateError(ctx, "Expected file path after 'package'");
         }
         let path = ctx.tokenStream.getCurrentTokenText();
         ctx.tokenStream.moveNext();
 
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
-            throw new Error("Expected ';' after the statement");
+            throw this._generateError(ctx, "Expected ';' after the statement");
         }
         let semicolon = ctx.tokenStream.getCurrentToken();
         let length = semicolon.start + semicolon.length - keywordToken.start;
@@ -233,44 +240,47 @@ export class Proto3Parser {
 
         let option = "";
         if (ctx.tokenStream.getCurrentToken().type === TokenType.openParenthesis) {
+            ctx.tokenStream.moveNext();
             option = "(" + this._consumeFullIdentifier(ctx, "option");
 
             if (ctx.tokenStream.getCurrentToken().type !== TokenType.closeParenthesis) {
-                throw new Error("Expected ')' after the option path");
+                throw this._generateError(ctx, "Expected ')' after the option path");
             }
             option += ")";
             ctx.tokenStream.moveNext();
 
             if (ctx.tokenStream.getCurrentToken().type !== TokenType.dot) {
-                throw new Error("Expected '.' after the option path");
+                throw this._generateError(ctx, "Expected '.' after the option path");
             }
             option += ".";
+            ctx.tokenStream.moveNext();
         }
 
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
-            throw new Error("Expected option name after 'option'");
+            throw this._generateError(ctx, "Expected option name after 'option'");
         }
         option += ctx.tokenStream.getCurrentTokenText();
         ctx.tokenStream.moveNext();
 
-        if (ctx.tokenStream.getCurrentToken().type !== TokenType.operator || ctx.tokenStream.getCurrentTokenText() !== "=") {
-            throw new Error("Expected '=' after the option name");
+        if (!((ctx.tokenStream.getCurrentToken().type === TokenType.operator) && (ctx.tokenStream.getCurrentTokenText() === "="))) {
+            throw this._generateError(ctx, "Expected '=' after the option name");
         }
         ctx.tokenStream.moveNext();
 
-        if (ctx.tokenStream.getCurrentToken().type !== TokenType.string) {
-            throw new Error("Expected option value after '='");
+        if (!([TokenType.string, TokenType.number, TokenType.boolean, TokenType.identifier].includes(ctx.tokenStream.getCurrentToken().type))) {
+            throw this._generateError(ctx, `Expected option value after '=', got ${ctx.tokenStream.getCurrentTokenText()}`);
         }
-        let value = ctx.tokenStream.getCurrentTokenText();
+        let value = ctx.tokenStream.getCurrentToken();
+        let valueType = ctx.tokenStream.getCurrentToken().type;
         ctx.tokenStream.moveNext();
 
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
-            throw new Error("Expected ';' after the statement");
+            throw this._generateError(ctx, `Expected ';' after the statement, got ${ctx.tokenStream.getCurrentTokenText()}`);
         }
 
         let semicolon = ctx.tokenStream.getCurrentToken();
         let length = semicolon.start + semicolon.length - keywordToken.start;
-        return new OptionNode(keywordToken.start, length, option, value);
+        return new OptionNode(keywordToken.start, length, option, value, valueType);
     }
 
     private _handleMessage(ctx: ParserContext): MessageNode {
@@ -278,14 +288,14 @@ export class Proto3Parser {
         ctx.tokenStream.moveNext();
 
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
-            throw new Error("Expected message name after 'message'");
+            throw this._generateError(ctx, "Expected message name after 'message'");
         }
 
         let name = ctx.tokenStream.getCurrentTokenText();
         ctx.tokenStream.moveNext();
 
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.openBrace) {
-            throw new Error("Expected '{' after the message name");
+            throw this._generateError(ctx, "Expected '{' after the message name");
         }
         ctx.tokenStream.moveNext();
 
@@ -295,11 +305,12 @@ export class Proto3Parser {
         while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
             switch (ctx.tokenStream.getCurrentToken().type) {
                 case TokenType.keyword: {
-                    let keyword = ctx.tokenStream.getCurrentTokenText();
-
-                    switch (keyword) {
-                        case "option":
+                    switch ((ctx.tokenStream.getCurrentToken() as KeywordToken).keyword) {
+                        case KeywordType.option:
                             options.push(this._handleOption(ctx));
+                            break;
+                        case KeywordType.message:
+                            children.push(this._handleMessage(ctx));
                             break;
                     }
 
@@ -324,14 +335,14 @@ export class Proto3Parser {
     private _consumeFullIdentifier(ctx: ParserContext, prevKeyword: string): string {
         let result = "";
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
-            throw new Error(`Expected ${prevKeyword} name after '${prevKeyword}'`);
+            throw this._generateError(ctx, `Expected ${prevKeyword} name after '${prevKeyword}'`);
         }
         result += ctx.tokenStream.getCurrentTokenText();
         ctx.tokenStream.moveNext();
 
         while (ctx.tokenStream.getCurrentToken().type === TokenType.dot) {
             if (ctx.tokenStream.getNextToken().type !== TokenType.identifier) {
-                throw new Error(`Unexpected token in ${prevKeyword} name`);
+                throw this._generateError(ctx, `Unexpected token in ${prevKeyword} name`);
             }
             result += ctx.tokenStream.getCurrentTokenText();
             result += ctx.tokenStream.getNextTokenText();
@@ -340,5 +351,23 @@ export class Proto3Parser {
         }
 
         return result;
+    }
+
+    private _generateError(ctx: ParserContext, message: string): Error {
+        let token = ctx.tokenStream.getCurrentToken();
+        let start = token.start;
+        let line = 0;
+        let column = 0;
+        for (let length of ctx.tokenStream.text.split(/\r?\n/).map(line => line.length)) {
+            if (start > length) {
+                start -= length;
+                line++;
+            } else {
+                column = start;
+                break;
+            }
+        }
+
+        return new Error(`Error at ${line}:${column}: ${message}`);
     }
 }

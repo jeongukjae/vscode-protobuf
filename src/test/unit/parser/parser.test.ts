@@ -1,6 +1,7 @@
 import {expect} from 'chai';
 import { ImportNode, MessageNode, NodeType, PackageNode, SyntaxNode } from '../../../parser/nodes';
 import {Proto3Parser} from '../../../parser/parser';
+import { BooleanToken, IntegerToken } from '../../../parser/tokens';
 
 describe('Parser', () => {
     [
@@ -28,6 +29,13 @@ package a.b.c;
 import "a.proto";
 
 message A {
+    option (my_option).bool_ = true;
+    option (my_option).int_ = -1;
+    option (my_option).float_ = -inf;
+    option (my_option).float_ = -3.3e+2;
+    option (my_option).ident_ = IDENT;
+
+    message B {}
 }`;
 
         let parser = new Proto3Parser();
@@ -45,7 +53,17 @@ message A {
         expect(result.children![2].type).to.equal(NodeType.import);
         expect((result.children![2] as ImportNode).path).to.equal('"a.proto"');
 
-        expect(result.children![3].type).to.equal(NodeType.message);
-        expect((result.children![3] as MessageNode).name).to.equal('A');
+        let messageA = result.children![3] as MessageNode;
+        expect(messageA.type).to.equal(NodeType.message);
+        expect(messageA.name).to.equal('A');
+        expect(messageA.children).to.have.lengthOf(1);
+        expect(messageA.children![0].type).to.equal(NodeType.message);
+        expect((messageA.children![0] as MessageNode).name).to.equal('B');
+
+        expect(messageA.options).to.have.lengthOf(5);
+        expect(messageA.options![0].name).to.equal('(my_option).bool_');
+        expect((messageA.options![0].value as BooleanToken).text).to.equal('true');
+        expect(messageA.options![1].name).to.equal('(my_option).int_');
+        expect((messageA.options![1].value as IntegerToken).text).to.equal('-1');
     });
 });

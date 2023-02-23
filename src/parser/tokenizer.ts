@@ -131,7 +131,7 @@ export class Proto3Tokenizer {
                     return;
                 }
 
-                // nan, inf, true, and false are handled in _maybeHandleIdentifierAndKeyword.
+                // true, and false are handled in _maybeHandleIdentifierAndKeyword.
                 if (this._maybeHandleIdentifierAndKeyword(ctx)) {
                     return;
                 }
@@ -187,7 +187,7 @@ export class Proto3Tokenizer {
     }
 
     private _canBeNumber(ctx: TokenizerContext): boolean {
-        const charCanBeNumber = (ch: number, nextchar: number) => {
+        const charCanBeNumber = (ch: number, nextchar: number, next2cahr: number): boolean => {
             if (isDecimal(ch)) {
                 return true;
             }
@@ -195,14 +195,24 @@ export class Proto3Tokenizer {
             if (ch === Char.Period && isDecimal(nextchar)) {
                 return true;
             }
+
+            if (ch === Char.i && nextchar === Char.n && next2cahr === Char.f) {
+                return true;
+            }
+
+            if (ch === Char.n && nextchar === Char.a && next2cahr === Char.n) {
+                return true;
+            }
+
+            return false;
         };
 
-        if (charCanBeNumber(ctx.chstream.getCurrentChar(), ctx.chstream.nextChar)) {
+        if (charCanBeNumber(ctx.chstream.getCurrentChar(), ctx.chstream.nextChar, ctx.chstream.lookAhead(2))) {
             return true;
         }
 
         if (ctx.chstream.getCurrentChar() === Char.Hyphen || ctx.chstream.getCurrentChar() === Char.Plus) {
-            if (charCanBeNumber(ctx.chstream.nextChar, ctx.chstream.lookAhead(2))) {
+            if (charCanBeNumber(ctx.chstream.nextChar, ctx.chstream.lookAhead(2), ctx.chstream.lookAhead(3))) {
                 return true;
             }
         }
@@ -216,6 +226,18 @@ export class Proto3Tokenizer {
 
         if (ctx.chstream.getCurrentChar() === Char.Hyphen || ctx.chstream.getCurrentChar() === Char.Plus) {
             ctx.chstream.moveNext();
+        }
+
+        if (ctx.chstream.getCurrentChar() === Char.i && ctx.chstream.nextChar === Char.n && ctx.chstream.lookAhead(2) === Char.f) {
+            ctx.chstream.advance(3);
+            ctx.tokens.push(new FloatToken(start, ctx.chstream.position - start, ctx.chstream.text.substring(start, ctx.chstream.position)));
+            return true;
+        }
+
+        if (ctx.chstream.getCurrentChar() === Char.n && ctx.chstream.nextChar === Char.a && ctx.chstream.lookAhead(2) === Char.n) {
+            ctx.chstream.advance(3);
+            ctx.tokens.push(new FloatToken(start, ctx.chstream.position - start, ctx.chstream.text.substring(start, ctx.chstream.position)));
+            return true;
         }
 
         if (ctx.chstream.getCurrentChar() === Char._0) {

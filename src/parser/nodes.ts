@@ -1,3 +1,5 @@
+import { Token, TokenType } from "./tokens";
+
 export const enum NodeType {
     invalid,
     empty,
@@ -93,12 +95,14 @@ export class PackageNode extends Node {
 
 export class OptionNode extends Node {
     name: string;
-    value: string;
+    value: Token;
+    valueTokenType: TokenType;
 
-    constructor(start: number, length: number, name: string, value: string) {
+    constructor(start: number, length: number, name: string, value: Token, valueTokenType: TokenType) {
         super(NodeType.option, start, length);
         this.name = name;
         this.value = value;
+        this.valueTokenType = valueTokenType;
     }
 }
 
