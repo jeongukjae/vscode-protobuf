@@ -1,14 +1,14 @@
 {
-  "name": "protobuf",
+  "name": "vscode-protobuf",
   "publisher": "jeongukjae",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/jeongukjae/vscode-protobuf"
   },
-  "displayName": "protobuf",
+  "displayName": "Protocol Buffers",
   "description": "A VSCode Extension for Protocol Buffers",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.75.0"
   },
