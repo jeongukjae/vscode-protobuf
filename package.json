@@ -2,6 +2,10 @@
   "name": "protobuf",
   "publisher": "jeongukjae",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jeongukjae/vscode-protobuf"
+  },
   "displayName": "protobuf",
   "description": "A VSCode Extension for Protocol Buffers",
   "version": "0.0.1",
@@ -13,7 +17,6 @@
     "Formatters"
   ],
   "activationEvents": [
-    "onCommand:protobuf.helloWorld",
     "onLanguage:protobuf3",
     "onLanguage:textproto"
   ],
@@ -41,16 +44,6 @@
             "buf"
           ],
           "description": "The formatter to use for formatting Protocol Buffers 3 files.",
-          "scope": "resource"
-        },
-        "protobuf3.lint.provider": {
-          "type": "string",
-          "default": "",
-          "enum": [
-            "",
-            "buf"
-          ],
-          "description": "The linter to use for linting Protocol Buffers 3 files.",
           "scope": "resource"
         },
         "protobuf3.protoc.executable": {
@@ -115,12 +108,7 @@
         }
       }
     },
-    "commands": [
-      {
-        "command": "protobuf.helloWorld",
-        "title": "Hello World"
-      }
-    ],
+    "commands": [],
     "languages": [
       {
         "id": "protobuf3",
