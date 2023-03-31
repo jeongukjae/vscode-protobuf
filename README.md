@@ -5,8 +5,8 @@ vscode-protobuf provides additional features for editing Protocol Buffers and it
 ## Features
 
 * Syntax highlighting for Protocol Buffers and its text format.
-* Diagnostic messages for Protocol Buffers.
-* Code formatting for Protocol Buffers and its text format.
+* Diagnostic messages for Protocol Buffers. (`protoc`, `buf`)
+* Code formatting for Protocol Buffers and its text format. (`clang-format`, `buf`, `txtpbfmt`)
 
 <!-- Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
 
