@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { doProto3Diagnostic } from './langaugefeatures/proto3Diagnostic';
 import { proto3FormatProvider } from './langaugefeatures/proto3Format';
+import { proto3SymbolProvider } from './langaugefeatures/proto3Symbol';
 import { textprotoFormatProvider } from './langaugefeatures/textprotoFormat';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -8,6 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const diagnostics = vscode.languages.createDiagnosticCollection("protobuf-errors");
 
 	vscode.languages.registerDocumentFormattingEditProvider('protobuf3', proto3FormatProvider);
+	vscode.languages.registerDocumentSymbolProvider('protobuf3', proto3SymbolProvider);
 	vscode.workspace.onDidOpenTextDocument((document) => {
 		if (document.languageId === 'protobuf3') {
 			doProto3Diagnostic(document, diagnostics);
