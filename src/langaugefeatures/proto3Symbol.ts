@@ -28,6 +28,8 @@ export const proto3SymbolProvider: vscode.DocumentSymbolProvider = {
                     for (const child of msgNode.children || []) {
                         walk(child, msgSymbol);
                     }
+                    break;
+
                 default:
                     break;
             }

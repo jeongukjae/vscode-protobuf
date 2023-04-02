@@ -1,7 +1,8 @@
 export const enum TokenType {
     invalid,
     string,
-    number,
+    integer,
+    float,
     boolean,
     identifier,
     keyword,
@@ -123,7 +124,7 @@ export class Comment implements Token {
 }
 
 export class IntegerToken implements Token {
-    type: TokenType = TokenType.number;
+    type: TokenType = TokenType.integer;
     start: number;
     length: number;
     text: string;
@@ -138,7 +139,7 @@ export class IntegerToken implements Token {
 }
 
 export class FloatToken implements Token {
-    type: TokenType = TokenType.number;
+    type: TokenType = TokenType.float;
     start: number;
     length: number;
     text: string;

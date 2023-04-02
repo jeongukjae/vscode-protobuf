@@ -148,3 +148,35 @@ export class FieldNode extends Node {
         this.options = options;
     }
 }
+
+export class EnumNode extends Node {
+    name: string;
+    options: OptionNode[];
+    values: EnumValueNode[];
+
+    constructor(start: number, length: number, name: string, options: OptionNode[], values: EnumValueNode[]) {
+        super(NodeType.enum, start, length);
+        this.name = name;
+        this.options = options;
+        this.values = values;
+    }
+}
+
+export class EnumValueNode extends Node {
+    name: string;
+    number: string;
+    options?: OptionNode[];
+
+    constructor(start: number, length: number, name: string, number: string) {
+        super(NodeType.enum, start, length);
+        this.name = name;
+        this.number = number;
+    }
+
+    addOption(option: OptionNode) {
+        if (!this.options) {
+            this.options = [];
+        }
+        this.options.push(option);
+    }
+}

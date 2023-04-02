@@ -54,6 +54,9 @@ export class Proto3Tokenizer {
                     this._handleSingleLineComment(ctx);
                 } else if (ctx.chstream.nextChar === Char.Asterisk) {
                     this._handleMultiLineComment(ctx);
+                } else {
+                    // invalid token here.
+                    this._handleInvalid(ctx);
                 }
                 return;
             }
