@@ -1,82 +1,15 @@
-import { CommentNode, DocumentNode, ImportNode, MessageNode, Node, OptionNode, PackageNode, SyntaxNode, FieldNode } from "./nodes";
+import { CommentNode, DocumentNode, ImportNode, MessageNode, Node, OptionNode, PackageNode, SyntaxNode, FieldNode, EnumNode, EnumValueNode } from "./nodes";
 import { Proto3Tokenizer } from "./tokenizer";
-import { Comment, KeywordToken, KeywordType, Token, TokenType } from "./tokens";
-
-
-export class TokenStream {
-    private _text: string;
-    private _tokens: Token[];
-    private _position: number;
-
-    constructor(text: string,  tokens: Token[]) {
-        this._text = text;
-        this._tokens = tokens;
-        this._position = 0;
-    }
-
-    get text(): string {
-        return this._text;
-    }
-
-    get position(): number {
-        return this._position;
-    }
-
-    getCurrentToken(): Token {
-        return this._tokens[this._position];
-    }
-
-    getCurrentTokenText(): string {
-        return this._text.substring(this.getCurrentToken().start, this.getCurrentToken().start + this.getCurrentToken().length);
-    }
-
-    getNextToken(): Token {
-        return this._tokens[this._position + 1];
-    }
-
-    getNextTokenText(): string {
-        return this._text.substring(this.getNextToken().start, this.getNextToken().start + this.getNextToken().length);
-    }
-
-    lookAhead(offset: number): Token | null {
-        const pos = this._position + offset;
-        if (pos >= this._tokens.length || pos < 0) {
-            return null;
-        }
-        return this._tokens[pos];
-    }
-
-    lookAheadText(offset: number): string {
-        const token = this.lookAhead(offset);
-        if (token) {
-            return this._text.substring(token.start, token.start + token.length);
-        }
-        return "";
-    }
-
-    isEndOfStream(): boolean {
-        return this._position >= this._tokens.length - 1;
-    }
-
-    moveNext() {
-        if (this._position < this._tokens.length - 1) {
-            this._position++;
-            return;
-        }
-
-        throw new Error("Unexpected end of stream");
-    }
-
-    advance(offset: number) {
-        this._position += offset;
-    }
-}
+import { Comment, IntegerToken, KeywordToken, KeywordType, Token, TokenType } from "./tokens";
+import { TokenStream } from "./tokenstream";
 
 export interface ParserContext {
     tokenStream: TokenStream;
     document: DocumentNode;
-    current: Node;
+    current: Node[];
 }
+
+const getCurrent = (ctx: ParserContext): Node => ctx.current[ctx.current.length - 1];
 
 export class Proto3Parser {
     parse(text: string): DocumentNode {
@@ -90,7 +23,7 @@ export class Proto3Parser {
         let ctx = {
             tokenStream: new TokenStream(text, tokens),
             document: document,
-            current: document
+            current: [document],
         };
 
         this._parse(ctx);
@@ -122,47 +55,42 @@ export class Proto3Parser {
 
     private _handleComment(ctx: ParserContext) {
         let commentToken = ctx.tokenStream.getCurrentToken() as Comment;
-        let comment = new CommentNode(commentToken.start, commentToken.length, commentToken.text);
+        let comment = new CommentNode(commentToken.start, commentToken.start + commentToken.length, commentToken.text);
 
-        comment.setParent(ctx.current);
-        ctx.current.add(comment);
+        comment.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(comment);
     }
 
     private _handleKeyword(ctx: ParserContext) {
         let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         switch (keywordToken.keyword) {
             case KeywordType.syntax: {
-                let syntax = this._handleSyntax(ctx);
-                syntax.setParent(ctx.current);
-                ctx.current.add(syntax);
+                this._handleSyntax(ctx);
                 return;
             }
 
             case KeywordType.package: {
-                let pkg = this._handlePackage(ctx);
-                pkg.setParent(ctx.current);
-                ctx.current.add(pkg);
+                this._handlePackage(ctx);
                 return;
             }
 
             case KeywordType.import: {
-                let imp = this._handleImport(ctx);
-                imp.setParent(ctx.current);
-                ctx.current.add(imp);
+                this._handleImport(ctx);
                 return;
             }
 
             case KeywordType.option: {
-                let option = this._handleOption(ctx);
-                option.setParent(ctx.current);
-                ctx.current.add(option);
+                this._handleOption(ctx);
                 return;
             }
 
             case KeywordType.message: {
-                let message = this._handleMessage(ctx);
-                message.setParent(ctx.current);
-                ctx.current.add(message);
+                this._handleMessage(ctx);
+                return;
+            }
+
+            case KeywordType.enum: {
+                this._handleEnum(ctx);
                 return;
             }
         }
@@ -185,21 +113,24 @@ export class Proto3Parser {
             throw this._generateError(ctx, "Expected ';' after the statement");
         }
         let semicolon = ctx.tokenStream.getCurrentToken();
-        let length = semicolon.start + semicolon.length - keywordToken.start;
-        return new SyntaxNode(keywordToken.start, length, "proto3");
+        const syntax = new SyntaxNode(keywordToken.start, semicolon.start + semicolon.length, "proto3");
+        syntax.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(syntax);
+        return syntax;
     }
 
     private _handlePackage(ctx: ParserContext): PackageNode {
         let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         ctx.tokenStream.moveNext();
 
-        let path = this._consumeFullIdentifier(ctx, "package");
+        let path = this._consumeFullIdentifier(ctx);
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
             throw this._generateError(ctx, "Expected ';' after the statement");
         }
-        let semicolon = ctx.tokenStream.getCurrentToken();
-        let length = semicolon.start + semicolon.length - keywordToken.start;
-        return new PackageNode(keywordToken.start, length, path);
+        const pkg = new PackageNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length, path);
+        pkg.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(pkg);
+        return pkg;
     }
 
     private _handleImport(ctx: ParserContext): ImportNode {
@@ -208,12 +139,11 @@ export class Proto3Parser {
 
         let modifier: string | undefined = undefined;
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.string) {
-            if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
-                throw this._generateError(ctx, "Expected file path after 'package'");
+            if (ctx.tokenStream.getCurrentToken().type !== TokenType.keyword) {
+                throw this._generateError(ctx, "Expected file path or specific keyword after 'import'");
             }
-
-            if (ctx.tokenStream.getCurrentTokenText() !== "public" || ctx.tokenStream.getCurrentTokenText() !== "weak") {
-                throw this._generateError(ctx, "Expected file path after 'package'");
+            if (ctx.tokenStream.getCurrentTokenText() !== "public" && ctx.tokenStream.getCurrentTokenText() !== "weak") {
+                throw this._generateError(ctx, "Expected file path or specific keyword after 'import'");
             }
             modifier = ctx.tokenStream.getCurrentTokenText();
 
@@ -221,7 +151,7 @@ export class Proto3Parser {
         }
 
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.string) {
-            throw this._generateError(ctx, "Expected file path after 'package'");
+            throw this._generateError(ctx, "Expected file path or specific keyword after 'import'");
         }
         let path = ctx.tokenStream.getCurrentTokenText();
         ctx.tokenStream.moveNext();
@@ -229,58 +159,119 @@ export class Proto3Parser {
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
             throw this._generateError(ctx, "Expected ';' after the statement");
         }
-        let semicolon = ctx.tokenStream.getCurrentToken();
-        let length = semicolon.start + semicolon.length - keywordToken.start;
-        return new ImportNode(keywordToken.start, length, path, modifier);
+        const ipt = new ImportNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length, path, modifier);
+        ipt.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(ipt);
+        return ipt;
     }
 
     private _handleOption(ctx: ParserContext): OptionNode {
         let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         ctx.tokenStream.moveNext();
 
-        let option = "";
-        if (ctx.tokenStream.getCurrentToken().type === TokenType.openParenthesis) {
-            ctx.tokenStream.moveNext();
-            option = "(" + this._consumeFullIdentifier(ctx, "option");
-
-            if (ctx.tokenStream.getCurrentToken().type !== TokenType.closeParenthesis) {
-                throw this._generateError(ctx, "Expected ')' after the option path");
-            }
-            option += ")";
-            ctx.tokenStream.moveNext();
-
-            if (ctx.tokenStream.getCurrentToken().type !== TokenType.dot) {
-                throw this._generateError(ctx, "Expected '.' after the option path");
-            }
-            option += ".";
-            ctx.tokenStream.moveNext();
-        }
-
-        if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
-            throw this._generateError(ctx, "Expected option name after 'option'");
-        }
-        option += ctx.tokenStream.getCurrentTokenText();
-        ctx.tokenStream.moveNext();
+        let option = this._consumeOptionName(ctx);
 
         if (!((ctx.tokenStream.getCurrentToken().type === TokenType.operator) && (ctx.tokenStream.getCurrentTokenText() === "="))) {
             throw this._generateError(ctx, "Expected '=' after the option name");
         }
         ctx.tokenStream.moveNext();
 
-        if (!([TokenType.string, TokenType.number, TokenType.boolean, TokenType.identifier].includes(ctx.tokenStream.getCurrentToken().type))) {
-            throw this._generateError(ctx, `Expected option value after '=', got ${ctx.tokenStream.getCurrentTokenText()}`);
-        }
-        let value = ctx.tokenStream.getCurrentToken();
-        let valueType = ctx.tokenStream.getCurrentToken().type;
-        ctx.tokenStream.moveNext();
+        let value = this._consumeOptionValue(ctx);
+        let valueType = value.type;
 
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
             throw this._generateError(ctx, `Expected ';' after the statement, got ${ctx.tokenStream.getCurrentTokenText()}`);
         }
 
-        let semicolon = ctx.tokenStream.getCurrentToken();
-        let length = semicolon.start + semicolon.length - keywordToken.start;
-        return new OptionNode(keywordToken.start, length, option, value, valueType);
+        const opt = new OptionNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length, option, value, valueType);
+        opt.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(opt);
+        return opt;
+    }
+
+    private _handleEnum(ctx: ParserContext): EnumNode {
+        let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
+        ctx.tokenStream.moveNext();
+
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+            throw this._generateError(ctx, "Expected enum name after 'enum'");
+        }
+
+        let name = ctx.tokenStream.getCurrentTokenText();
+        ctx.tokenStream.moveNext();
+
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.openBrace) {
+            throw this._generateError(ctx, "Expected '{' after the enum name");
+        }
+        ctx.tokenStream.moveNext();
+
+        const enumNode = new EnumNode(keywordToken.start, 0, name);
+        getCurrent(ctx).add(enumNode);
+        enumNode.setParent(getCurrent(ctx));
+        ctx.current.push(enumNode);
+
+        while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
+            switch (ctx.tokenStream.getCurrentToken().type) {
+                case TokenType.keyword: {
+                    switch ((ctx.tokenStream.getCurrentToken() as KeywordToken).keyword) {
+                        case KeywordType.option:
+                            this._handleOption(ctx);
+                            break;
+                        // TODO reserved.
+                    }
+
+                    break;
+                }
+
+                case TokenType.identifier: {
+                    this._handleEnumValue(ctx);
+                    break;
+                }
+
+                case TokenType.semicolon: {
+                    // empty statement
+                    // TODO: add empty statement node?
+                    break;
+                }
+            }
+            ctx.tokenStream.moveNext();
+        }
+        enumNode.end = ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length;
+
+        ctx.current.pop();
+        return enumNode;
+    }
+
+    private _handleEnumValue(ctx: ParserContext): EnumValueNode {
+        let name = ctx.tokenStream.getCurrentTokenText();
+        ctx.tokenStream.moveNext();
+
+        if (!(ctx.tokenStream.getCurrentToken().type === TokenType.operator && ctx.tokenStream.getCurrentTokenText() === "=")) {
+            throw this._generateError(ctx, "Expected '=' after the enum value name");
+        }
+        ctx.tokenStream.moveNext();
+
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.integer) {
+            throw this._generateError(ctx, "Expected number after '='");
+        }
+
+        let value = (ctx.tokenStream.getCurrentToken() as IntegerToken).text;
+        ctx.tokenStream.moveNext();
+
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.openBracket) {
+            this._handleFieldOption(ctx);
+            ctx.tokenStream.moveNext();
+        }
+
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
+            throw this._generateError(ctx, "Expected ';' after the statement");
+        }
+
+        // TODO: option
+        const val = new EnumValueNode(ctx.tokenStream.getCurrentToken().start, ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length, name, value);
+        val.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(val);
+        return val;
     }
 
     private _handleMessage(ctx: ParserContext): MessageNode {
@@ -299,50 +290,239 @@ export class Proto3Parser {
         }
         ctx.tokenStream.moveNext();
 
-        let children: Node[] = [];
-        let options: OptionNode[] = [];
-        let fields: FieldNode[] = [];
+        const message = new MessageNode(keywordToken.start, keywordToken.start, name);
+        getCurrent(ctx).add(message);
+        message.setParent(getCurrent(ctx));
+        ctx.current.push(message);
+
         while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
             switch (ctx.tokenStream.getCurrentToken().type) {
                 case TokenType.keyword: {
                     switch ((ctx.tokenStream.getCurrentToken() as KeywordToken).keyword) {
                         case KeywordType.option:
-                            options.push(this._handleOption(ctx));
+                            this._handleOption(ctx);
                             break;
                         case KeywordType.message:
-                            children.push(this._handleMessage(ctx));
+                            this._handleMessage(ctx);
                             break;
-                    }
+                        case KeywordType.enum:
+                            this._handleEnum(ctx);
+                            break;
+                        case KeywordType.map:
+                        case KeywordType.repeated:
+                        case KeywordType.optional:
+                            // TODO: required keyword?
+                            this._handleField(ctx);
+                            break;
+                        case KeywordType.oneof:
+                            // TODO
+                            break;
 
+                        // TODO reserved?
+                    }
                     break;
                 }
+
+                case TokenType.identifier:
+                case TokenType.primitiveType: {
+                    this._handleField(ctx);
+                    break;
+                }
+
                 case TokenType.semicolon: {
                     // empty statement
                     // TODO: add empty statement node?
-                    ctx.tokenStream.moveNext();
                     break;
                 }
             }
+            ctx.tokenStream.moveNext();
         }
 
-        const message = new MessageNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start, name);
-        children.forEach(child => message.add(child));
-        options.forEach(option => message.addOption(option));
-        fields.forEach(field => message.addField(field));
+        message.end = ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length;
+        ctx.current.pop();
         return message;
     }
 
-    private _consumeFullIdentifier(ctx: ParserContext, prevKeyword: string): string {
+    // Parse field like `int32 foo = 1;`.
+    private _handleField(ctx: ParserContext): FieldNode {
+        const consumeType = (ctx: ParserContext): string => {
+            if (ctx.tokenStream.getCurrentToken().type === TokenType.primitiveType) {
+                let token = ctx.tokenStream.getCurrentTokenText();
+                ctx.tokenStream.moveNext();
+                return token;
+            } else if (ctx.tokenStream.getCurrentToken().type === TokenType.identifier) {
+                const ident = this._consumeFullIdentifier(ctx);
+                return ident;
+            }
+            throw this._generateError(ctx, "Expected type");
+        };
+        let modifier = "";
+        let type_ = "";
+        let startToken = ctx.tokenStream.getCurrentToken();
+
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.keyword) {
+            switch ((ctx.tokenStream.getCurrentToken() as KeywordToken).keyword) {
+                case KeywordType.map:
+                    type_ = "map";
+                    ctx.tokenStream.moveNext();
+
+                    if (ctx.tokenStream.getCurrentToken().type !== TokenType.less) {
+                        throw this._generateError(ctx, "Expected '<' after 'map'");
+                    }
+                    ctx.tokenStream.moveNext();
+                    type_ += "<" + consumeType(ctx);
+
+                    if (ctx.tokenStream.getCurrentToken().type !== TokenType.comma) {
+                        throw this._generateError(ctx, "Expected ',' after the type");
+                    }
+                    ctx.tokenStream.moveNext();
+                    type_ += "," + consumeType(ctx);
+
+                    if (ctx.tokenStream.getCurrentToken().type !== TokenType.greater) {
+                        throw this._generateError(ctx, "Expected '>' after the type");
+                    }
+                    type_ += ">";
+                    ctx.tokenStream.moveNext();
+                    break;
+                case KeywordType.repeated:
+                    ctx.tokenStream.moveNext();
+
+                    modifier = "repeated";
+                    type_ = consumeType(ctx);
+                    break;
+
+                case KeywordType.optional:
+                    ctx.tokenStream.moveNext();
+
+                    modifier = "optional";
+                    type_ = consumeType(ctx);
+                    break;
+            }
+        } else if (ctx.tokenStream.getCurrentToken().type === TokenType.primitiveType) {
+            type_ = consumeType(ctx);
+        } else if (ctx.tokenStream.getCurrentToken().type === TokenType.identifier) {
+            type_ = consumeType(ctx);
+        } else {
+            throw this._generateError(ctx, "Expected field type");
+        }
+
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+            throw this._generateError(ctx, "Expected field name");
+        }
+        let name = ctx.tokenStream.getCurrentTokenText();
+        ctx.tokenStream.moveNext();
+
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.operator || ctx.tokenStream.getCurrentTokenText() !== "=") {
+            throw this._generateError(ctx, "Expected '=' after the field name");
+        }
+        ctx.tokenStream.moveNext();
+
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.integer) {
+            throw this._generateError(ctx, "Expected number after '='");
+        }
+        const fieldNumber = ctx.tokenStream.getCurrentTokenText();
+        ctx.tokenStream.moveNext();
+
+        let options: OptionNode[] = [];
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.openBracket) {
+            options = this._handleFieldOption(ctx);
+            ctx.tokenStream.moveNext();
+        }
+
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
+            throw this._generateError(ctx, "Expected ';' after the field");
+        }
+
+        const field = new FieldNode(startToken.start, ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length, name, fieldNumber, type_, modifier, options);
+        getCurrent(ctx).add(field);
+        field.setParent(getCurrent(ctx));
+        return field;
+    }
+
+    // Parse field options like `[(json_name) = "foo"]`.
+    private _handleFieldOption(ctx: ParserContext): OptionNode[] {
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.openBracket) {
+            throw this._generateError(ctx, "Expected '[' after the field name");
+        }
+        ctx.tokenStream.moveNext();
+
+        let options: OptionNode[] = [];
+        while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket) {
+            let startToken = ctx.tokenStream.getCurrentToken();
+            let optionName = this._consumeOptionName(ctx);
+            if (ctx.tokenStream.getCurrentToken().type !== TokenType.operator || ctx.tokenStream.getCurrentTokenText() !== "=") {
+                throw this._generateError(ctx, "Expected '=' after the option name");
+            }
+            ctx.tokenStream.moveNext();
+
+            let value = this._consumeOptionValue(ctx);
+            let valueType = value.type;
+
+            options.push(new OptionNode(startToken.start, value.start + value.length, optionName, value, valueType));
+
+            if (ctx.tokenStream.getCurrentToken().type === TokenType.comma) {
+                ctx.tokenStream.moveNext();
+            } else if (ctx.tokenStream.getCurrentToken().type === TokenType.closeBracket) {
+                continue;
+            } else {
+                throw this._generateError(ctx, "Expected ',' or ']' after the option value");
+            }
+        }
+
+        return options;
+    }
+
+    private _consumeOptionName(ctx: ParserContext): string {
+        let option = "";
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.openParenthesis) {
+            ctx.tokenStream.moveNext();
+            option = "(" + this._consumeFullIdentifier(ctx);
+
+            if (ctx.tokenStream.getCurrentToken().type !== TokenType.closeParenthesis) {
+                throw this._generateError(ctx, "Expected ')' after the option path");
+            }
+            option += ")";
+            ctx.tokenStream.moveNext();
+        } else if (ctx.tokenStream.getCurrentToken().type === TokenType.identifier) {
+            option = this._consumeFullIdentifier(ctx);
+        } else {
+            throw this._generateError(ctx, "Expected option name after 'option'");
+        }
+
+        while (ctx.tokenStream.getCurrentToken().type === TokenType.dot) {
+            option += ".";
+            ctx.tokenStream.moveNext();
+            if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+                throw this._generateError(ctx, "Expected option name after '.'");
+            }
+            option += ctx.tokenStream.getCurrentTokenText();
+            ctx.tokenStream.moveNext();
+        }
+
+        return option;
+    }
+
+    private _consumeOptionValue(ctx: ParserContext): Token {
+        if (!([TokenType.string, TokenType.integer, TokenType.float, TokenType.boolean, TokenType.identifier].includes(ctx.tokenStream.getCurrentToken().type))) {
+            throw this._generateError(ctx, `Expected option value after '=', got ${ctx.tokenStream.getCurrentTokenText()}`);
+        }
+        let value = ctx.tokenStream.getCurrentToken();
+        ctx.tokenStream.moveNext();
+
+        return value;
+    }
+
+    private _consumeFullIdentifier(ctx: ParserContext): string {
         let result = "";
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
-            throw this._generateError(ctx, `Expected ${prevKeyword} name after '${prevKeyword}'`);
+            throw this._generateError(ctx, `Expected name`);
         }
         result += ctx.tokenStream.getCurrentTokenText();
         ctx.tokenStream.moveNext();
 
         while (ctx.tokenStream.getCurrentToken().type === TokenType.dot) {
             if (ctx.tokenStream.getNextToken().type !== TokenType.identifier) {
-                throw this._generateError(ctx, `Unexpected token in ${prevKeyword} name`);
+                throw this._generateError(ctx, `Unexpected token in name`);
             }
             result += ctx.tokenStream.getCurrentTokenText();
             result += ctx.tokenStream.getNextTokenText();

@@ -1,7 +1,8 @@
 export const enum TokenType {
     invalid,
     string,
-    number,
+    integer,
+    float,
     boolean,
     identifier,
     keyword,
@@ -36,6 +37,7 @@ export const enum KeywordType {
     oneof,
     repeated,
     map,
+    optional,
     reserved,
     to, // e.g. "reserved 1 to 15;"
 }
@@ -55,6 +57,7 @@ export const keywordMap: { [key: string]: KeywordType } = {
     oneof: KeywordType.oneof,
     repeated: KeywordType.repeated,
     map: KeywordType.map,
+    optional: KeywordType.optional,
     reserved: KeywordType.reserved,
     to: KeywordType.to,
 };
@@ -123,7 +126,7 @@ export class Comment implements Token {
 }
 
 export class IntegerToken implements Token {
-    type: TokenType = TokenType.number;
+    type: TokenType = TokenType.integer;
     start: number;
     length: number;
     text: string;
@@ -138,7 +141,7 @@ export class IntegerToken implements Token {
 }
 
 export class FloatToken implements Token {
-    type: TokenType = TokenType.number;
+    type: TokenType = TokenType.float;
     start: number;
     length: number;
     text: string;

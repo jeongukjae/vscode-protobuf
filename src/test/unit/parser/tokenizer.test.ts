@@ -265,7 +265,7 @@ message Outer {
                 const tokens = tokenizer.tokenize(test.input);
 
                 expect(tokens.length).to.equal(1);
-                expect(tokens[0].type).to.equal(TokenType.number);
+                expect(tokens[0].type).to.equal(TokenType.integer);
                 expect(tokens[0].start).to.equal(0);
                 expect(tokens[0].length).to.equal(test.input.length);
                 expect((tokens[0] as IntegerToken).text).to.equal(test.input);
@@ -285,10 +285,26 @@ message Outer {
                 const tokens = tokenizer.tokenize(test.input);
 
                 expect(tokens.length).to.equal(1);
-                expect(tokens[0].type).to.equal(TokenType.number);
+                expect(tokens[0].type).to.equal(TokenType.float);
                 expect(tokens[0].start).to.equal(0);
                 expect(tokens[0].length).to.equal(test.input.length);
                 expect((tokens[0] as FloatToken).text).to.equal(test.input);
+            });
+        });
+    });
+
+    describe("Invalid", () => {
+        [
+            { name: "single slash", input: '/' },
+        ].forEach((test) => {
+            it(`should tokenize an invalid character: ${test.name}`, () => {
+                const tokenizer = new Proto3Tokenizer();
+                const tokens = tokenizer.tokenize(test.input);
+
+                expect(tokens.length).to.equal(1);
+                expect(tokens[0].type).to.equal(TokenType.invalid);
+                expect(tokens[0].start).to.equal(0);
+                expect(tokens[0].length).to.equal(test.input.length);
             });
         });
     });

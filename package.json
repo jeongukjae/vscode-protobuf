@@ -84,7 +84,6 @@
           "description": "The arguments to pass to clang-format.",
           "scope": "resource"
         },
-
         "textproto.format.provider": {
           "type": "string",
           "default": "txtpbfmt",
@@ -155,7 +154,7 @@
     "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "unittest": "mocha src/test/unit/**/*.ts --require ts-node/register"
+    "unittest": "mocha src/test/unit/**/*.ts --require ts-node/register --watch-files src"
   },
   "devDependencies": {
     "@types/chai": "^4.3.4",

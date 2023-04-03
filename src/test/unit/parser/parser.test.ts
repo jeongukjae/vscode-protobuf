@@ -1,7 +1,10 @@
 import {expect} from 'chai';
-import { ImportNode, MessageNode, NodeType, PackageNode, SyntaxNode } from '../../../parser/nodes';
+import * as glob from 'glob';
+import * as fs from 'fs';
+import * as path from 'path';
+import { FieldNode, ImportNode, MessageNode, NodeType, OptionNode, PackageNode, SyntaxNode } from '../../../parser/nodes';
 import {Proto3Parser} from '../../../parser/parser';
-import { BooleanToken, IntegerToken } from '../../../parser/tokens';
+import { BooleanToken, FloatToken, IntegerToken } from '../../../parser/tokens';
 
 describe('Parser', () => {
     [
@@ -9,14 +12,46 @@ describe('Parser', () => {
         { input: 'syntax = "proto2";', expectedError: "Expected 'proto3' after 'syntax ='" },
         { input: 'syntax = "proto3"', expectedError: "Unexpected end of stream" },
         { input: 'package', expectedError: "Unexpected end of stream" },
-        { input: 'package;', expectedError: "Expected package name after 'package'" },
-        { input: 'package .', expectedError: "Expected package name after 'package'" },
-        { input: 'package a.;', expectedError: "Unexpected token in package name" },
-        { input: 'import a.proto', expectedError: "Expected file path after 'package'" },
+        { input: 'package;', expectedError: "Expected name" },
+        { input: 'package .', expectedError: "Expected name" },
+        { input: 'package a.;', expectedError: "Unexpected token in name" },
+        { input: 'import a.proto', expectedError: "Expected file path or specific keyword after 'import'" },
     ].forEach((test) => {
         it(`parse error: \`${test.input}\` -> ${test.expectedError}`, () => {
             let parser = new Proto3Parser();
             expect(() => parser.parse(test.input)).to.throw(test.expectedError);
+        });
+    });
+
+    [
+        // basic syntax
+        { input: `syntax = "proto3";`},
+        { input: `package a.b.c;` },
+        { input: `import 'a.proto';`},
+        { input: `import public 'a.proto';`},
+
+        // option name
+        { input: `option (my_option) = true;` },
+        { input: `option (my_option).option1 = true;` },
+        { input: `option (my_option).name1.name2 = true;` },
+        { input: `option my_option.name1.name2 = true;` },
+        { input: `option name2 = true;` },
+
+        // messages
+        { input: `message A { option (my_option).bool_ = true; }` },
+        { input: `message A { option (my_option).int_ = -1; }` },
+        { input: `message A { option (my_option).float_ = -inf; }` },
+        { input: `message A { option (my_option).float_ = -3.3e+2; }` },
+        { input: `message A { option (my_option).ident_ = IDENT; }` },
+        { input: `message A { int32 a = 1; float b = 2; }` },
+
+        // enums
+        { input: `enum EnumName { A = 1; }`},
+        { input: `enum EnumName { ; A = 1 [(custom_option) = "hello world"]; }`},
+    ].forEach((test) => {
+        it(`parse success without error: \`${test.input}\``, () => {
+            let parser = new Proto3Parser();
+            expect(() => parser.parse(test.input)).to.not.throw();
         });
     });
 
@@ -32,10 +67,11 @@ message A {
     option (my_option).bool_ = true;
     option (my_option).int_ = -1;
     option (my_option).float_ = -inf;
-    option (my_option).float_ = -3.3e+2;
-    option (my_option).ident_ = IDENT;
 
     message B {}
+
+    B b = 1;
+    float c = 2;
 }`;
 
         let parser = new Proto3Parser();
@@ -56,14 +92,33 @@ message A {
         let messageA = result.children![3] as MessageNode;
         expect(messageA.type).to.equal(NodeType.message);
         expect(messageA.name).to.equal('A');
-        expect(messageA.children).to.have.lengthOf(1);
-        expect(messageA.children![0].type).to.equal(NodeType.message);
-        expect((messageA.children![0] as MessageNode).name).to.equal('B');
+        expect(messageA.children).to.have.lengthOf(6);
 
-        expect(messageA.options).to.have.lengthOf(5);
-        expect(messageA.options![0].name).to.equal('(my_option).bool_');
-        expect((messageA.options![0].value as BooleanToken).text).to.equal('true');
-        expect(messageA.options![1].name).to.equal('(my_option).int_');
-        expect((messageA.options![1].value as IntegerToken).text).to.equal('-1');
+        expect((messageA.children![0] as OptionNode).name).to.equal('(my_option).bool_');
+        expect(((messageA.children![0] as OptionNode).value as BooleanToken).text).to.equal('true');
+        expect((messageA.children![1] as OptionNode).name).to.equal('(my_option).int_');
+        expect(((messageA.children![1] as OptionNode).value as IntegerToken).text).to.equal('-1');
+        expect((messageA.children![2] as OptionNode).name).to.equal('(my_option).float_');
+        expect(((messageA.children![2] as OptionNode).value as FloatToken).text).to.equal('-inf');
+
+        expect(messageA.children![3].type).to.equal(NodeType.message);
+        expect((messageA.children![3] as MessageNode).name).to.equal('B');
+
+        expect((messageA.children![4] as FieldNode).name).to.equal('b');
+        expect((messageA.children![4] as FieldNode).dtype).to.equal('B');
+        expect((messageA.children![5] as FieldNode).name).to.equal('c');
+        expect((messageA.children![5] as FieldNode).dtype).to.equal('float');
+    });
+
+    describe('Parsing all sample files', () => {
+        const basedir = path.join(__dirname, '../../../../sample');
+        glob.sync("**/*.proto", {cwd: basedir}).forEach((file) => {
+            it(`should parse file: ${file}`, () => {
+                let parser = new Proto3Parser();
+                const filepath = path.join(basedir, file);
+                const content = fs.readFileSync(filepath, 'utf8');
+                expect(() => parser.parse(content)).to.not.throw();
+            });
+        });
     });
 });
