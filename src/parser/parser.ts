@@ -1,6 +1,5 @@
 // TODO: currently, cannot parse or add comments node.
 // TODO: currently, cannot parse rpc node.
-
 import {
   CommentNode,
   DocumentNode,
