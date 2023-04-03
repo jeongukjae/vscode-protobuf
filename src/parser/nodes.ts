@@ -21,20 +21,21 @@ export const enum NodeType {
     field,
     oneof,
     reserved,
+    enumValue,
 }
 
 export abstract class Node {
     type: NodeType;
     start: number;
-    length: number;
+    end: number;
 
     parent?: Node;
     children?: Node[];
 
-    constructor(type: NodeType, start: number, length: number) {
+    constructor(type: NodeType, start: number, end: number) {
         this.type = type;
         this.start = start;
-        this.length = length;
+        this.end = end;
     }
 
     setParent(node: Node) {
@@ -50,16 +51,16 @@ export abstract class Node {
 }
 
 export class DocumentNode extends Node {
-    constructor(start: number, length: number) {
-        super(NodeType.document, start, length);
+    constructor(start: number, end: number) {
+        super(NodeType.document, start, end);
     }
 }
 
 export class CommentNode extends Node {
     text: string;
 
-    constructor(start: number, length: number, text: string) {
-        super(NodeType.comment, start, length);
+    constructor(start: number, end: number, text: string) {
+        super(NodeType.comment, start, end);
         this.text = text;
     }
 }
@@ -67,8 +68,8 @@ export class CommentNode extends Node {
 export class SyntaxNode extends Node {
     version: string;
 
-    constructor(start: number, length: number, version: string) {
-        super(NodeType.syntax, start, length);
+    constructor(start: number, end: number, version: string) {
+        super(NodeType.syntax, start, end);
         this.version = version;
     }
 }
@@ -77,8 +78,8 @@ export class ImportNode extends Node {
     path: string;
     modifier?: string;
 
-    constructor(start: number, length: number, path: string, modifier?: string) {
-        super(NodeType.import, start, length);
+    constructor(start: number, end: number, path: string, modifier?: string) {
+        super(NodeType.import, start, end);
         this.path = path;
         this.modifier = modifier;
     }
@@ -87,8 +88,8 @@ export class ImportNode extends Node {
 export class PackageNode extends Node {
     name: string;
 
-    constructor(start: number, length: number, name: string) {
-        super(NodeType.package, start, length);
+    constructor(start: number, end: number, name: string) {
+        super(NodeType.package, start, end);
         this.name = name;
     }
 }
@@ -98,8 +99,8 @@ export class OptionNode extends Node {
     value: Token;
     valueTokenType: TokenType;
 
-    constructor(start: number, length: number, name: string, value: Token, valueTokenType: TokenType) {
-        super(NodeType.option, start, length);
+    constructor(start: number, end: number, name: string, value: Token, valueTokenType: TokenType) {
+        super(NodeType.option, start, end);
         this.name = name;
         this.value = value;
         this.valueTokenType = valueTokenType;
@@ -109,8 +110,8 @@ export class OptionNode extends Node {
 export class MessageNode extends Node {
     name: string;
 
-    constructor(start: number, length: number, name: string) {
-        super(NodeType.message, start, length);
+    constructor(start: number, end: number, name: string) {
+        super(NodeType.message, start, end);
         this.name = name;
     }
 }
@@ -122,8 +123,8 @@ export class FieldNode extends Node {
     modifier?: string;
     options?: OptionNode[];
 
-    constructor(start: number, length: number, name: string, number: string, dtype: string, modifier?: string, options?: OptionNode[]) {
-        super(NodeType.field, start, length);
+    constructor(start: number, end: number, name: string, number: string, dtype: string, modifier?: string, options?: OptionNode[]) {
+        super(NodeType.field, start, end);
         this.name = name;
         this.number = number;
         this.dtype = dtype;
@@ -135,8 +136,8 @@ export class FieldNode extends Node {
 export class EnumNode extends Node {
     name: string;
 
-    constructor(start: number, length: number, name: string) {
-        super(NodeType.enum, start, length);
+    constructor(start: number, end: number, name: string) {
+        super(NodeType.enum, start, end);
         this.name = name;
     }
 }
@@ -146,8 +147,8 @@ export class EnumValueNode extends Node {
     number: string;
     options?: OptionNode[];
 
-    constructor(start: number, length: number, name: string, number: string) {
-        super(NodeType.enum, start, length);
+    constructor(start: number, end: number, name: string, number: string) {
+        super(NodeType.enumValue, start, end);
         this.name = name;
         this.number = number;
     }

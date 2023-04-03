@@ -1,6 +1,6 @@
 import { CommentNode, DocumentNode, ImportNode, MessageNode, Node, OptionNode, PackageNode, SyntaxNode, FieldNode, EnumNode, EnumValueNode } from "./nodes";
 import { Proto3Tokenizer } from "./tokenizer";
-import { Comment, IntegerToken, KeywordToken, KeywordType, PrimitiveTypeToken, Token, TokenType } from "./tokens";
+import { Comment, IntegerToken, KeywordToken, KeywordType, Token, TokenType } from "./tokens";
 import { TokenStream } from "./tokenstream";
 
 export interface ParserContext {
@@ -55,7 +55,7 @@ export class Proto3Parser {
 
     private _handleComment(ctx: ParserContext) {
         let commentToken = ctx.tokenStream.getCurrentToken() as Comment;
-        let comment = new CommentNode(commentToken.start, commentToken.length, commentToken.text);
+        let comment = new CommentNode(commentToken.start, commentToken.start + commentToken.length, commentToken.text);
 
         comment.setParent(getCurrent(ctx));
         getCurrent(ctx).add(comment);
@@ -113,8 +113,7 @@ export class Proto3Parser {
             throw this._generateError(ctx, "Expected ';' after the statement");
         }
         let semicolon = ctx.tokenStream.getCurrentToken();
-        let length = semicolon.start + semicolon.length - keywordToken.start;
-        const syntax = new SyntaxNode(keywordToken.start, length, "proto3");
+        const syntax = new SyntaxNode(keywordToken.start, semicolon.start + semicolon.length, "proto3");
         syntax.setParent(getCurrent(ctx));
         getCurrent(ctx).add(syntax);
         return syntax;
@@ -128,9 +127,7 @@ export class Proto3Parser {
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
             throw this._generateError(ctx, "Expected ';' after the statement");
         }
-        let semicolon = ctx.tokenStream.getCurrentToken();
-        let length = semicolon.start + semicolon.length - keywordToken.start;
-        const pkg = new PackageNode(keywordToken.start, length, path);
+        const pkg = new PackageNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length, path);
         pkg.setParent(getCurrent(ctx));
         getCurrent(ctx).add(pkg);
         return pkg;
@@ -162,9 +159,7 @@ export class Proto3Parser {
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
             throw this._generateError(ctx, "Expected ';' after the statement");
         }
-        let semicolon = ctx.tokenStream.getCurrentToken();
-        let length = semicolon.start + semicolon.length - keywordToken.start;
-        const ipt = new ImportNode(keywordToken.start, length, path, modifier);
+        const ipt = new ImportNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length, path, modifier);
         ipt.setParent(getCurrent(ctx));
         getCurrent(ctx).add(ipt);
         return ipt;
@@ -188,9 +183,7 @@ export class Proto3Parser {
             throw this._generateError(ctx, `Expected ';' after the statement, got ${ctx.tokenStream.getCurrentTokenText()}`);
         }
 
-        let semicolon = ctx.tokenStream.getCurrentToken();
-        let length = semicolon.start + semicolon.length - keywordToken.start;
-        const opt = new OptionNode(keywordToken.start, length, option, value, valueType);
+        const opt = new OptionNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length, option, value, valueType);
         opt.setParent(getCurrent(ctx));
         getCurrent(ctx).add(opt);
         return opt;
@@ -212,7 +205,7 @@ export class Proto3Parser {
         }
         ctx.tokenStream.moveNext();
 
-        const enumNode = new EnumNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start, name);
+        const enumNode = new EnumNode(keywordToken.start, 0, name);
         getCurrent(ctx).add(enumNode);
         enumNode.setParent(getCurrent(ctx));
         ctx.current.push(enumNode);
@@ -243,6 +236,7 @@ export class Proto3Parser {
             }
             ctx.tokenStream.moveNext();
         }
+        enumNode.end = ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length;
 
         ctx.current.pop();
         return enumNode;
@@ -273,11 +267,8 @@ export class Proto3Parser {
             throw this._generateError(ctx, "Expected ';' after the statement");
         }
 
-        let semicolon = ctx.tokenStream.getCurrentToken();
-        let length = semicolon.start + semicolon.length - ctx.tokenStream.getCurrentToken().start;
-
         // TODO: option
-        const val = new EnumValueNode(ctx.tokenStream.getCurrentToken().start, length, name, value);
+        const val = new EnumValueNode(ctx.tokenStream.getCurrentToken().start, ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length, name, value);
         val.setParent(getCurrent(ctx));
         getCurrent(ctx).add(val);
         return val;
@@ -299,7 +290,7 @@ export class Proto3Parser {
         }
         ctx.tokenStream.moveNext();
 
-        const message = new MessageNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start, name);
+        const message = new MessageNode(keywordToken.start, keywordToken.start, name);
         getCurrent(ctx).add(message);
         message.setParent(getCurrent(ctx));
         ctx.current.push(message);
@@ -347,6 +338,7 @@ export class Proto3Parser {
             ctx.tokenStream.moveNext();
         }
 
+        message.end = ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length;
         ctx.current.pop();
         return message;
     }
@@ -441,7 +433,7 @@ export class Proto3Parser {
             throw this._generateError(ctx, "Expected ';' after the field");
         }
 
-        const field = new FieldNode(startToken.start, ctx.tokenStream.getCurrentToken().start, name, fieldNumber, type_, modifier, options);
+        const field = new FieldNode(startToken.start, ctx.tokenStream.getCurrentToken().start + ctx.tokenStream.getCurrentToken().length, name, fieldNumber, type_, modifier, options);
         getCurrent(ctx).add(field);
         field.setParent(getCurrent(ctx));
         return field;
@@ -466,7 +458,7 @@ export class Proto3Parser {
             let value = this._consumeOptionValue(ctx);
             let valueType = value.type;
 
-            options.push(new OptionNode(startToken.start, value.start + value.length - startToken.start, optionName, value, valueType));
+            options.push(new OptionNode(startToken.start, value.start + value.length, optionName, value, valueType));
 
             if (ctx.tokenStream.getCurrentToken().type === TokenType.comma) {
                 ctx.tokenStream.moveNext();
