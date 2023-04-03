@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import * as glob from 'glob';
 import * as fs from 'fs';
 import * as path from 'path';
-import { FieldNode, ImportNode, MessageNode, NodeType, PackageNode, SyntaxNode } from '../../../parser/nodes';
+import { FieldNode, ImportNode, MessageNode, NodeType, OptionNode, PackageNode, SyntaxNode } from '../../../parser/nodes';
 import {Proto3Parser} from '../../../parser/parser';
 import { BooleanToken, FloatToken, IntegerToken } from '../../../parser/tokens';
 
@@ -92,23 +92,22 @@ message A {
         let messageA = result.children![3] as MessageNode;
         expect(messageA.type).to.equal(NodeType.message);
         expect(messageA.name).to.equal('A');
-        expect(messageA.children).to.have.lengthOf(1);
-        expect(messageA.children![0].type).to.equal(NodeType.message);
-        expect((messageA.children![0] as MessageNode).name).to.equal('B');
+        expect(messageA.children).to.have.lengthOf(6);
 
-        expect(messageA.options).to.have.lengthOf(3);
-        expect(messageA.options![0].name).to.equal('(my_option).bool_');
-        expect((messageA.options![0].value as BooleanToken).text).to.equal('true');
-        expect(messageA.options![1].name).to.equal('(my_option).int_');
-        expect((messageA.options![1].value as IntegerToken).text).to.equal('-1');
-        expect(messageA.options![2].name).to.equal('(my_option).float_');
-        expect((messageA.options![2].value as FloatToken).text).to.equal('-inf');
+        expect((messageA.children![0] as OptionNode).name).to.equal('(my_option).bool_');
+        expect(((messageA.children![0] as OptionNode).value as BooleanToken).text).to.equal('true');
+        expect((messageA.children![1] as OptionNode).name).to.equal('(my_option).int_');
+        expect(((messageA.children![1] as OptionNode).value as IntegerToken).text).to.equal('-1');
+        expect((messageA.children![2] as OptionNode).name).to.equal('(my_option).float_');
+        expect(((messageA.children![2] as OptionNode).value as FloatToken).text).to.equal('-inf');
 
-        expect(messageA.fields).to.have.lengthOf(2);
-        expect(messageA.fields![0].name).to.equal('b');
-        expect((messageA.fields![0] as FieldNode).dtype).to.equal('B');
-        expect(messageA.fields![1].name).to.equal('c');
-        expect((messageA.fields![1] as FieldNode).dtype).to.equal('float');
+        expect(messageA.children![3].type).to.equal(NodeType.message);
+        expect((messageA.children![3] as MessageNode).name).to.equal('B');
+
+        expect((messageA.children![4] as FieldNode).name).to.equal('b');
+        expect((messageA.children![4] as FieldNode).dtype).to.equal('B');
+        expect((messageA.children![5] as FieldNode).name).to.equal('c');
+        expect((messageA.children![5] as FieldNode).dtype).to.equal('float');
     });
 
     describe('Parsing all sample files', () => {

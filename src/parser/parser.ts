@@ -6,8 +6,10 @@ import { TokenStream } from "./tokenstream";
 export interface ParserContext {
     tokenStream: TokenStream;
     document: DocumentNode;
-    current: Node;
+    current: Node[];
 }
+
+const getCurrent = (ctx: ParserContext): Node => ctx.current[ctx.current.length - 1];
 
 export class Proto3Parser {
     parse(text: string): DocumentNode {
@@ -21,7 +23,7 @@ export class Proto3Parser {
         let ctx = {
             tokenStream: new TokenStream(text, tokens),
             document: document,
-            current: document
+            current: [document],
         };
 
         this._parse(ctx);
@@ -55,52 +57,40 @@ export class Proto3Parser {
         let commentToken = ctx.tokenStream.getCurrentToken() as Comment;
         let comment = new CommentNode(commentToken.start, commentToken.length, commentToken.text);
 
-        comment.setParent(ctx.current);
-        ctx.current.add(comment);
+        comment.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(comment);
     }
 
     private _handleKeyword(ctx: ParserContext) {
         let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
         switch (keywordToken.keyword) {
             case KeywordType.syntax: {
-                let syntax = this._handleSyntax(ctx);
-                syntax.setParent(ctx.current);
-                ctx.current.add(syntax);
+                this._handleSyntax(ctx);
                 return;
             }
 
             case KeywordType.package: {
-                let pkg = this._handlePackage(ctx);
-                pkg.setParent(ctx.current);
-                ctx.current.add(pkg);
+                this._handlePackage(ctx);
                 return;
             }
 
             case KeywordType.import: {
-                let imp = this._handleImport(ctx);
-                imp.setParent(ctx.current);
-                ctx.current.add(imp);
+                this._handleImport(ctx);
                 return;
             }
 
             case KeywordType.option: {
-                let option = this._handleOption(ctx);
-                option.setParent(ctx.current);
-                ctx.current.add(option);
+                this._handleOption(ctx);
                 return;
             }
 
             case KeywordType.message: {
-                let message = this._handleMessage(ctx);
-                message.setParent(ctx.current);
-                ctx.current.add(message);
+                this._handleMessage(ctx);
                 return;
             }
 
             case KeywordType.enum: {
-                let enumNode = this._handleEnum(ctx);
-                enumNode.setParent(ctx.current);
-                ctx.current.add(enumNode);
+                this._handleEnum(ctx);
                 return;
             }
         }
@@ -124,7 +114,10 @@ export class Proto3Parser {
         }
         let semicolon = ctx.tokenStream.getCurrentToken();
         let length = semicolon.start + semicolon.length - keywordToken.start;
-        return new SyntaxNode(keywordToken.start, length, "proto3");
+        const syntax = new SyntaxNode(keywordToken.start, length, "proto3");
+        syntax.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(syntax);
+        return syntax;
     }
 
     private _handlePackage(ctx: ParserContext): PackageNode {
@@ -137,7 +130,10 @@ export class Proto3Parser {
         }
         let semicolon = ctx.tokenStream.getCurrentToken();
         let length = semicolon.start + semicolon.length - keywordToken.start;
-        return new PackageNode(keywordToken.start, length, path);
+        const pkg = new PackageNode(keywordToken.start, length, path);
+        pkg.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(pkg);
+        return pkg;
     }
 
     private _handleImport(ctx: ParserContext): ImportNode {
@@ -168,7 +164,10 @@ export class Proto3Parser {
         }
         let semicolon = ctx.tokenStream.getCurrentToken();
         let length = semicolon.start + semicolon.length - keywordToken.start;
-        return new ImportNode(keywordToken.start, length, path, modifier);
+        const ipt = new ImportNode(keywordToken.start, length, path, modifier);
+        ipt.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(ipt);
+        return ipt;
     }
 
     private _handleOption(ctx: ParserContext): OptionNode {
@@ -191,7 +190,10 @@ export class Proto3Parser {
 
         let semicolon = ctx.tokenStream.getCurrentToken();
         let length = semicolon.start + semicolon.length - keywordToken.start;
-        return new OptionNode(keywordToken.start, length, option, value, valueType);
+        const opt = new OptionNode(keywordToken.start, length, option, value, valueType);
+        opt.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(opt);
+        return opt;
     }
 
     private _handleEnum(ctx: ParserContext): EnumNode {
@@ -210,14 +212,17 @@ export class Proto3Parser {
         }
         ctx.tokenStream.moveNext();
 
-        let options: OptionNode[] = [];
-        let values: EnumValueNode[] = [];
+        const enumNode = new EnumNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start, name);
+        getCurrent(ctx).add(enumNode);
+        enumNode.setParent(getCurrent(ctx));
+        ctx.current.push(enumNode);
+
         while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
             switch (ctx.tokenStream.getCurrentToken().type) {
                 case TokenType.keyword: {
                     switch ((ctx.tokenStream.getCurrentToken() as KeywordToken).keyword) {
                         case KeywordType.option:
-                            options.push(this._handleOption(ctx));
+                            this._handleOption(ctx);
                             break;
                         // TODO reserved.
                     }
@@ -226,7 +231,7 @@ export class Proto3Parser {
                 }
 
                 case TokenType.identifier: {
-                    values.push(this._handleEnumValue(ctx));
+                    this._handleEnumValue(ctx);
                     break;
                 }
 
@@ -239,7 +244,7 @@ export class Proto3Parser {
             ctx.tokenStream.moveNext();
         }
 
-        const enumNode = new EnumNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start, name, options, values);
+        ctx.current.pop();
         return enumNode;
     }
 
@@ -272,7 +277,10 @@ export class Proto3Parser {
         let length = semicolon.start + semicolon.length - ctx.tokenStream.getCurrentToken().start;
 
         // TODO: option
-        return new EnumValueNode(ctx.tokenStream.getCurrentToken().start, length, name, value);
+        const val = new EnumValueNode(ctx.tokenStream.getCurrentToken().start, length, name, value);
+        val.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(val);
+        return val;
     }
 
     private _handleMessage(ctx: ParserContext): MessageNode {
@@ -291,39 +299,42 @@ export class Proto3Parser {
         }
         ctx.tokenStream.moveNext();
 
-        let children: Node[] = [];
-        let options: OptionNode[] = [];
-        let fields: FieldNode[] = [];
+        const message = new MessageNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start, name);
+        getCurrent(ctx).add(message);
+        message.setParent(getCurrent(ctx));
+        ctx.current.push(message);
+
         while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
             switch (ctx.tokenStream.getCurrentToken().type) {
                 case TokenType.keyword: {
                     switch ((ctx.tokenStream.getCurrentToken() as KeywordToken).keyword) {
                         case KeywordType.option:
-                            options.push(this._handleOption(ctx));
+                            this._handleOption(ctx);
                             break;
                         case KeywordType.message:
-                            children.push(this._handleMessage(ctx));
+                            this._handleMessage(ctx);
                             break;
                         case KeywordType.enum:
-                            children.push(this._handleEnum(ctx));
+                            this._handleEnum(ctx);
                             break;
                         case KeywordType.map:
                         case KeywordType.repeated:
                         case KeywordType.optional:
-                            // TODO: required?
-                            fields.push(this._handleField(ctx));
+                            // TODO: required keyword?
+                            this._handleField(ctx);
                             break;
                         case KeywordType.oneof:
+                            // TODO
                             break;
 
-                        // TODO reserved.
+                        // TODO reserved?
                     }
                     break;
                 }
 
                 case TokenType.identifier:
                 case TokenType.primitiveType: {
-                    fields.push(this._handleField(ctx));
+                    this._handleField(ctx);
                     break;
                 }
 
@@ -336,8 +347,7 @@ export class Proto3Parser {
             ctx.tokenStream.moveNext();
         }
 
-        const message = new MessageNode(keywordToken.start, ctx.tokenStream.getCurrentToken().start, name, fields, options);
-        children.forEach(child => message.add(child));
+        ctx.current.pop();
         return message;
     }
 
@@ -432,6 +442,8 @@ export class Proto3Parser {
         }
 
         const field = new FieldNode(startToken.start, ctx.tokenStream.getCurrentToken().start, name, fieldNumber, type_, modifier, options);
+        getCurrent(ctx).add(field);
+        field.setParent(getCurrent(ctx));
         return field;
     }
 

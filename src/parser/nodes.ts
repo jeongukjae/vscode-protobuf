@@ -109,14 +109,9 @@ export class OptionNode extends Node {
 export class MessageNode extends Node {
     name: string;
 
-    fields: FieldNode[];
-    options: OptionNode[];
-
-    constructor(start: number, length: number, name: string, fields: FieldNode[], options: OptionNode[]) {
+    constructor(start: number, length: number, name: string) {
         super(NodeType.message, start, length);
         this.name = name;
-        this.fields = fields;
-        this.options = options;
     }
 }
 
@@ -139,14 +134,10 @@ export class FieldNode extends Node {
 
 export class EnumNode extends Node {
     name: string;
-    options: OptionNode[];
-    values: EnumValueNode[];
 
-    constructor(start: number, length: number, name: string, options: OptionNode[], values: EnumValueNode[]) {
+    constructor(start: number, length: number, name: string) {
         super(NodeType.enum, start, length);
         this.name = name;
-        this.options = options;
-        this.values = values;
     }
 }
 
