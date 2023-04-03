@@ -1,3 +1,6 @@
+// TODO: currently, cannot parse or add comments node.
+// TODO: currently, cannot parse rpc node.
+
 import {
   CommentNode,
   DocumentNode,
@@ -406,7 +409,6 @@ export class Proto3Parser {
               this._handleField(ctx);
               break;
             case KeywordType.oneof:
-              // TODO
               break;
 
             // TODO reserved?
@@ -679,7 +681,7 @@ export class Proto3Parser {
   private _generateError(ctx: ParserContext, message: string): Error {
     let token = ctx.tokenStream.getCurrentToken();
     let start = token.start;
-    let line = 0;
+    let line = 1;
     let column = 0;
     for (let length of ctx.tokenStream.text
       .split(/\r?\n/)

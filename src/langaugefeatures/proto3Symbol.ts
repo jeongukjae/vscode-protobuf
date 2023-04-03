@@ -29,6 +29,7 @@ export const proto3SymbolProvider: vscode.DocumentSymbolProvider = {
     try {
       docNode = proto3Parser.parse(text);
     } catch (e) {
+      console.log(e);
       // ignore the error and return cached result
       return cached[document.uri.toString()];
     }
