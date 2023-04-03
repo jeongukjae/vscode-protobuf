@@ -1,5 +1,8 @@
 import {expect} from 'chai';
-import { ImportNode, MessageNode, NodeType, PackageNode, SyntaxNode } from '../../../parser/nodes';
+import * as glob from 'glob';
+import * as fs from 'fs';
+import * as path from 'path';
+import { FieldNode, ImportNode, MessageNode, NodeType, PackageNode, SyntaxNode } from '../../../parser/nodes';
 import {Proto3Parser} from '../../../parser/parser';
 import { BooleanToken, FloatToken, IntegerToken } from '../../../parser/tokens';
 
@@ -9,9 +12,9 @@ describe('Parser', () => {
         { input: 'syntax = "proto2";', expectedError: "Expected 'proto3' after 'syntax ='" },
         { input: 'syntax = "proto3"', expectedError: "Unexpected end of stream" },
         { input: 'package', expectedError: "Unexpected end of stream" },
-        { input: 'package;', expectedError: "Expected package name after 'package'" },
-        { input: 'package .', expectedError: "Expected package name after 'package'" },
-        { input: 'package a.;', expectedError: "Unexpected token in package name" },
+        { input: 'package;', expectedError: "Expected name" },
+        { input: 'package .', expectedError: "Expected name" },
+        { input: 'package a.;', expectedError: "Unexpected token in name" },
         { input: 'import a.proto', expectedError: "Expected file path or specific keyword after 'import'" },
     ].forEach((test) => {
         it(`parse error: \`${test.input}\` -> ${test.expectedError}`, () => {
@@ -40,10 +43,11 @@ describe('Parser', () => {
         { input: `message A { option (my_option).float_ = -inf; }` },
         { input: `message A { option (my_option).float_ = -3.3e+2; }` },
         { input: `message A { option (my_option).ident_ = IDENT; }` },
+        { input: `message A { int32 a = 1; float b = 2; }` },
 
         // enums
         { input: `enum EnumName { A = 1; }`},
-        { input: `enum EnumName { A = 1 [(custom_option) = "hello world"]; }`},
+        { input: `enum EnumName { ; A = 1 [(custom_option) = "hello world"]; }`},
     ].forEach((test) => {
         it(`parse success without error: \`${test.input}\``, () => {
             let parser = new Proto3Parser();
@@ -65,6 +69,9 @@ message A {
     option (my_option).float_ = -inf;
 
     message B {}
+
+    B b = 1;
+    float c = 2;
 }`;
 
         let parser = new Proto3Parser();
@@ -96,22 +103,23 @@ message A {
         expect((messageA.options![1].value as IntegerToken).text).to.equal('-1');
         expect(messageA.options![2].name).to.equal('(my_option).float_');
         expect((messageA.options![2].value as FloatToken).text).to.equal('-inf');
+
+        expect(messageA.fields).to.have.lengthOf(2);
+        expect(messageA.fields![0].name).to.equal('b');
+        expect((messageA.fields![0] as FieldNode).dtype).to.equal('B');
+        expect(messageA.fields![1].name).to.equal('c');
+        expect((messageA.fields![1] as FieldNode).dtype).to.equal('float');
     });
 
-    // it('should parse files in the sample directory', () => {
-    //     let parser = new Proto3Parser();
-
-    //     const sampleDirectory = __dirname + '/../../../../sample';
-    //     glob(sampleDirectory + '/*.proto', (err, files) => {
-    //         if (err) {
-    //             throw err;
-    //         }
-
-    //         files.forEach((file) => {
-    //             const content = fs.readFileSync(file, 'utf8');
-    //             let result = parser.parse(content);
-    //             expect(result).not.to.be.undefined;
-    //         });
-    //     });
-    // });
+    describe('Parsing all sample files', () => {
+        const basedir = path.join(__dirname, '../../../../sample');
+        glob.sync("**/*.proto", {cwd: basedir}).forEach((file) => {
+            it(`should parse file: ${file}`, () => {
+                let parser = new Proto3Parser();
+                const filepath = path.join(basedir, file);
+                const content = fs.readFileSync(filepath, 'utf8');
+                expect(() => parser.parse(content)).to.not.throw();
+            });
+        });
+    });
 });

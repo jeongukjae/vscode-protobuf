@@ -37,6 +37,7 @@ export const enum KeywordType {
     oneof,
     repeated,
     map,
+    optional,
     reserved,
     to, // e.g. "reserved 1 to 15;"
 }
@@ -56,6 +57,7 @@ export const keywordMap: { [key: string]: KeywordType } = {
     oneof: KeywordType.oneof,
     repeated: KeywordType.repeated,
     map: KeywordType.map,
+    optional: KeywordType.optional,
     reserved: KeywordType.reserved,
     to: KeywordType.to,
 };

@@ -109,37 +109,25 @@ export class OptionNode extends Node {
 export class MessageNode extends Node {
     name: string;
 
-    fields?: FieldNode[];
-    options?: OptionNode[];
+    fields: FieldNode[];
+    options: OptionNode[];
 
-    constructor(start: number, length: number, name: string) {
+    constructor(start: number, length: number, name: string, fields: FieldNode[], options: OptionNode[]) {
         super(NodeType.message, start, length);
         this.name = name;
-    }
-
-    addField(field: FieldNode) {
-        if (!this.fields) {
-            this.fields = [];
-        }
-        this.fields.push(field);
-    }
-
-    addOption(option: OptionNode) {
-        if (!this.options) {
-            this.options = [];
-        }
-        this.options.push(option);
+        this.fields = fields;
+        this.options = options;
     }
 }
 
 export class FieldNode extends Node {
     name: string;
-    number: number;
+    number: string;
     dtype: string;
     modifier?: string;
     options?: OptionNode[];
 
-    constructor(start: number, length: number, name: string, number: number, dtype: string, modifier?: string, options?: OptionNode[]) {
+    constructor(start: number, length: number, name: string, number: string, dtype: string, modifier?: string, options?: OptionNode[]) {
         super(NodeType.field, start, length);
         this.name = name;
         this.number = number;
