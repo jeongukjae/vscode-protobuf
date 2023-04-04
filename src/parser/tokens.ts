@@ -8,6 +8,7 @@ export const enum TokenType {
   keyword,
   primitiveType,
   operator,
+  colon,
   semicolon,
   comma,
   openParenthesis,

@@ -13,6 +13,7 @@ import {
   EnumNode,
   EnumValueNode,
   OneofNode,
+  OptionValueNode,
 } from "./nodes";
 import { Proto3Tokenizer } from "./tokenizer";
 import {
@@ -265,7 +266,7 @@ export class Proto3Parser {
     moveNext(ctx);
 
     let value = this._consumeOptionValue(ctx);
-    let valueType = value.type;
+    moveNext(ctx);
 
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
       throw this._generateError(
@@ -280,8 +281,7 @@ export class Proto3Parser {
       ctx.tokenStream.getCurrentToken().start +
         ctx.tokenStream.getCurrentToken().length,
       option,
-      value,
-      valueType
+      value
     );
     opt.setParent(getCurrent(ctx));
     getCurrent(ctx).add(opt);
@@ -650,17 +650,16 @@ export class Proto3Parser {
       moveNext(ctx);
 
       let value = this._consumeOptionValue(ctx);
-      let valueType = value.type;
-
       options.push(
         new OptionNode(
           startToken.start,
-          value.start + value.length,
+          ctx.tokenStream.getCurrentToken().start +
+            ctx.tokenStream.getCurrentToken().length,
           optionName,
-          value,
-          valueType
+          value
         )
       );
+      moveNext(ctx);
 
       if (ctx.tokenStream.getCurrentToken().type === TokenType.comma) {
         moveNext(ctx);
@@ -711,9 +710,10 @@ export class Proto3Parser {
     return option;
   }
 
-  private _consumeOptionValue(ctx: ParserContext): Token {
+  private _consumeOptionValue(ctx: ParserContext): OptionValueNode {
+    // Handling simple literals.
     if (
-      ![
+      [
         TokenType.string,
         TokenType.integer,
         TokenType.float,
@@ -721,16 +721,59 @@ export class Proto3Parser {
         TokenType.identifier,
       ].includes(ctx.tokenStream.getCurrentToken().type)
     ) {
-      throw this._generateError(
-        ctx,
-        `Expected option value after '=', ` +
-          `got ${ctx.tokenStream.getCurrentTokenText()}`
+      let value = ctx.tokenStream.getCurrentToken();
+      return new OptionValueNode(
+        value.start,
+        value.start + value.length,
+        ctx.tokenStream.getCurrentTokenText()
       );
     }
-    let value = ctx.tokenStream.getCurrentToken();
-    moveNext(ctx);
 
-    return value;
+    // Handling message literals.
+    if (ctx.tokenStream.getCurrentToken().type === TokenType.openBrace) {
+      moveNext(ctx);
+
+      let optionValue = new OptionValueNode(
+        ctx.tokenStream.getCurrentToken().start,
+        ctx.tokenStream.getCurrentToken().start,
+        ""
+      );
+      while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
+        if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
+          throw this._generateError(ctx, "Expected identifier");
+        }
+
+        let nameToken = ctx.tokenStream.getCurrentToken();
+        moveNext(ctx);
+
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.colon) {
+          throw this._generateError(ctx, "Expected ':' after the identifier");
+        }
+        moveNext(ctx);
+
+        this._consumeOptionValue(ctx);
+        moveNext(ctx);
+
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.comma) {
+          moveNext(ctx);
+        }
+      }
+
+      optionValue.end =
+        ctx.tokenStream.getCurrentToken().start +
+        ctx.tokenStream.getCurrentToken().length;
+      optionValue.text = ctx.tokenStream.text.substring(
+        optionValue.start,
+        optionValue.end
+      );
+      return optionValue;
+    }
+
+    throw this._generateError(
+      ctx,
+      `Expected option value after '=', ` +
+        `got ${ctx.tokenStream.getCurrentTokenText()}`
+    );
   }
 
   private _consumeFullIdentifier(ctx: ParserContext): string {

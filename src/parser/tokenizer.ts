@@ -140,6 +140,13 @@ export class Proto3Tokenizer {
         ctx.chstream.moveNext();
         return;
       }
+      case Char.Colon: {
+        ctx.tokens.push(
+          Token.create(TokenType.colon, ctx.chstream.position, 1)
+        );
+        ctx.chstream.moveNext();
+        return;
+      }
       case Char.Semicolon: {
         ctx.tokens.push(
           Token.create(TokenType.semicolon, ctx.chstream.position, 1)
