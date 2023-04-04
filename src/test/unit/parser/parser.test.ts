@@ -11,6 +11,8 @@ import {
   OptionNode,
   OptionValueNode,
   PackageNode,
+  RPCNode,
+  ServiceNode,
   SyntaxNode,
 } from "../../../parser/nodes";
 import { Proto3Parser } from "../../../parser/parser";
@@ -80,6 +82,31 @@ describe("Parser", () => {
       a: 1
       b: { c: 2 } };`,
     },
+
+    // services
+    { input: `service ServiceName { }` },
+    {
+      input: `service ServiceName {
+        rpc MethodName (RequestType) returns (ResponseType);
+      }`,
+    },
+    {
+      input: `service ServiceName {
+        rpc MethodName (stream RequestType) returns (ResponseType) {
+          ;
+        }
+      }`,
+    },
+    {
+      input: `service ServiceName {
+        rpc MethodName (stream RequestType) returns (ResponseType) {
+          option (google.api.http) = {
+            post: "/v2/...+"
+            body: "*"
+          };
+        }
+      }`,
+    },
   ].forEach((test) => {
     it(`parse success without error: \`${test.input}\``, () => {
       let parser = new Proto3Parser();
@@ -112,13 +139,27 @@ message A {
     }
 
     int32 g = 5;
-}`;
+}
+
+service ServiceName {
+    // A simple RPC
+    rpc MethodName (RequestType) returns (ResponseType) {
+        option (google.api.http) = {
+            post: "/sample/path"
+            body: "*"
+        };
+    };
+
+    // Streaming RPC
+    rpc MethodName2 (stream RequestType2) returns (ResponseType2);
+}
+`;
 
     let parser = new Proto3Parser();
     let result = parser.parse(input);
 
     expect(result.children).not.to.be.undefined;
-    expect(result.children).to.have.lengthOf(4);
+    expect(result.children).to.have.lengthOf(5);
 
     expect(result.children![0].type).to.equal(NodeType.syntax);
     expect((result.children![0] as SyntaxNode).version).to.equal("proto3");
@@ -173,6 +214,33 @@ message A {
     );
 
     expect((messageA.children![7] as FieldNode).name).to.equal("g");
+
+    let service = result.children![4] as ServiceNode;
+    expect(service.type).to.equal(NodeType.service);
+    expect(service.name).to.equal("ServiceName");
+    expect(service.children).to.have.lengthOf(4);
+    expect(service.children![0].type).to.equal(NodeType.comment);
+    expect(service.children![1].type).to.equal(NodeType.rpc);
+    let firstRpc = service.children![1] as RPCNode;
+    expect(firstRpc.name).to.equal("MethodName");
+    expect(firstRpc.request).to.equal("RequestType");
+    expect(firstRpc.requestStream).to.equal(false);
+    expect(firstRpc.response).to.equal("ResponseType");
+    expect(firstRpc.responseStream).to.equal(false);
+    expect(firstRpc.children).to.have.lengthOf(1);
+    expect(firstRpc.children![0].type).to.equal(NodeType.option);
+    expect((firstRpc.children![0] as OptionNode).name).to.equal(
+      "(google.api.http)"
+    );
+    expect(service.children![2].type).to.equal(NodeType.comment);
+    expect(service.children![3].type).to.equal(NodeType.rpc);
+    let secondRpc = service.children![3] as RPCNode;
+    expect(secondRpc.name).to.equal("MethodName2");
+    expect(secondRpc.request).to.equal("RequestType2");
+    expect(secondRpc.requestStream).to.equal(true);
+    expect(secondRpc.response).to.equal("ResponseType2");
+    expect(secondRpc.responseStream).to.equal(false);
+    expect(secondRpc.children).to.be.undefined;
   });
 
   describe("Parsing all sample files", () => {

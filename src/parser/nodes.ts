@@ -178,11 +178,40 @@ export class EnumValueNode extends Node {
     this.name = name;
     this.number = number;
   }
+}
 
-  addOption(option: OptionNode) {
-    if (!this.options) {
-      this.options = [];
-    }
-    this.options.push(option);
+export class ServiceNode extends Node {
+  name: string;
+
+  constructor(start: number, end: number, name: string) {
+    super(NodeType.service, start, end);
+    this.name = name;
+  }
+}
+
+export class RPCNode extends Node {
+  name: string;
+  request: string;
+  requestStream: boolean;
+  response: string;
+  responseStream: boolean;
+  options: OptionNode[];
+
+  constructor(
+    start: number,
+    end: number,
+    name: string,
+    request: string,
+    requestStream: boolean,
+    response: string,
+    responseStream: boolean
+  ) {
+    super(NodeType.rpc, start, end);
+    this.name = name;
+    this.request = request;
+    this.requestStream = requestStream;
+    this.response = response;
+    this.responseStream = responseStream;
+    this.options = [];
   }
 }
