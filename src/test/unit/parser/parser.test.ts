@@ -9,6 +9,7 @@ import {
   MessageNode,
   NodeType,
   OptionNode,
+  OptionValueNode,
   PackageNode,
   SyntaxNode,
 } from "../../../parser/nodes";
@@ -69,6 +70,16 @@ describe("Parser", () => {
     { input: `enum EnumName { A = 1; }` },
     { input: `enum EnumName { ; A = 1 [(custom_option) = "hello world"]; }` },
     { input: `enum EnumName { rpc = 1; }` },
+
+    // option value
+    { input: `option (my_option).bool_ = true;` },
+    { input: `option (my_option).int_ = { a: 1, b: 2 };` },
+    { input: `option (my_option).int_ = { a: 1, b: { c: 2 } };` },
+    {
+      input: `option (my_option).int_ = {
+      a: 1
+      b: { c: 2 } };`,
+    },
   ].forEach((test) => {
     it(`parse success without error: \`${test.input}\``, () => {
       let parser = new Proto3Parser();
@@ -127,19 +138,19 @@ message A {
       "(my_option).bool_"
     );
     expect(
-      ((messageA.children![0] as OptionNode).value as BooleanToken).text
+      ((messageA.children![0] as OptionNode).value as OptionValueNode).text
     ).to.equal("true");
     expect((messageA.children![1] as OptionNode).name).to.equal(
       "(my_option).int_"
     );
     expect(
-      ((messageA.children![1] as OptionNode).value as IntegerToken).text
+      ((messageA.children![1] as OptionNode).value as OptionValueNode).text
     ).to.equal("-1");
     expect((messageA.children![2] as OptionNode).name).to.equal(
       "(my_option).float_"
     );
     expect(
-      ((messageA.children![2] as OptionNode).value as FloatToken).text
+      ((messageA.children![2] as OptionNode).value as OptionValueNode).text
     ).to.equal("-inf");
 
     expect(messageA.children![3].type).to.equal(NodeType.message);

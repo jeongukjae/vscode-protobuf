@@ -93,20 +93,26 @@ export class PackageNode extends Node {
 
 export class OptionNode extends Node {
   name: string;
-  value: Token;
-  valueTokenType: TokenType;
+  value: OptionValueNode;
 
   constructor(
     start: number,
     end: number,
     name: string,
-    value: Token,
-    valueTokenType: TokenType
+    value: OptionValueNode
   ) {
     super(NodeType.option, start, end);
     this.name = name;
     this.value = value;
-    this.valueTokenType = valueTokenType;
+  }
+}
+
+export class OptionValueNode extends Node {
+  text: string;
+
+  constructor(start: number, end: number, text: string) {
+    super(NodeType.option, start, end);
+    this.text = text;
   }
 }
 
