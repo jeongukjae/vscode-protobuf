@@ -12,6 +12,7 @@ import {
   FieldNode,
   EnumNode,
   EnumValueNode,
+  OneofNode,
 } from "./nodes";
 import { Proto3Tokenizer } from "./tokenizer";
 import {
@@ -32,6 +33,29 @@ export interface ParserContext {
 
 const getCurrent = (ctx: ParserContext): Node =>
   ctx.current[ctx.current.length - 1];
+
+// move next token and if it is a comment, add it to the current node, and
+// continue to move next until it is not a comment.
+const moveNext = (ctx: ParserContext) => {
+  ctx.tokenStream.moveNext();
+  if (ctx.tokenStream.getCurrentToken().type === TokenType.comment) {
+    let comment = new CommentNode(
+      ctx.tokenStream.getCurrentToken().start,
+      ctx.tokenStream.getCurrentToken().start +
+        ctx.tokenStream.getCurrentToken().length
+    );
+    comment.setParent(getCurrent(ctx));
+    getCurrent(ctx).add(comment);
+    ctx.tokenStream.moveNext();
+
+    while (ctx.tokenStream.getCurrentToken().type === TokenType.comment) {
+      comment.end =
+        ctx.tokenStream.getCurrentToken().start +
+        ctx.tokenStream.getCurrentToken().length;
+      ctx.tokenStream.moveNext();
+    }
+  }
+};
 
 export class Proto3Parser {
   parse(text: string): DocumentNode {
@@ -58,16 +82,16 @@ export class Proto3Parser {
       if (ctx.tokenStream.isEndOfStream()) {
         break;
       }
-      ctx.tokenStream.moveNext();
+      moveNext(ctx);
     } while (true);
   }
 
   private _handleToken(ctx: ParserContext) {
     switch (ctx.tokenStream.getCurrentToken().type) {
-      case TokenType.comment: {
-        this._handleComment(ctx);
-        return;
-      }
+      // case TokenType.comment: {
+      //   this._handleComment(ctx);
+      //   return;
+      // }
       case TokenType.keyword: {
         this._handleKeyword(ctx);
         return;
@@ -79,8 +103,7 @@ export class Proto3Parser {
     let commentToken = ctx.tokenStream.getCurrentToken() as Comment;
     let comment = new CommentNode(
       commentToken.start,
-      commentToken.start + commentToken.length,
-      commentToken.text
+      commentToken.start + commentToken.length
     );
 
     comment.setParent(getCurrent(ctx));
@@ -124,7 +147,7 @@ export class Proto3Parser {
 
   private _handleSyntax(ctx: ParserContext): SyntaxNode {
     let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
     if (
       ctx.tokenStream.getCurrentToken().type !== TokenType.operator &&
       ctx.tokenStream.getCurrentTokenText() !== "="
@@ -132,7 +155,7 @@ export class Proto3Parser {
       throw this._generateError(ctx, "Expected '=' after 'syntax'");
     }
 
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
     if (
       (ctx.tokenStream.getCurrentToken().type !== TokenType.string &&
         ctx.tokenStream.getCurrentTokenText() !== "'proto3'") ||
@@ -141,7 +164,7 @@ export class Proto3Parser {
       throw this._generateError(ctx, "Expected 'proto3' after 'syntax ='");
     }
 
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
       throw this._generateError(ctx, "Expected ';' after the statement");
     }
@@ -158,7 +181,7 @@ export class Proto3Parser {
 
   private _handlePackage(ctx: ParserContext): PackageNode {
     let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     let path = this._consumeFullIdentifier(ctx);
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
@@ -177,7 +200,7 @@ export class Proto3Parser {
 
   private _handleImport(ctx: ParserContext): ImportNode {
     let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     let modifier: string | undefined = undefined;
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.string) {
@@ -198,7 +221,7 @@ export class Proto3Parser {
       }
       modifier = ctx.tokenStream.getCurrentTokenText();
 
-      ctx.tokenStream.moveNext();
+      moveNext(ctx);
     }
 
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.string) {
@@ -208,7 +231,7 @@ export class Proto3Parser {
       );
     }
     let path = ctx.tokenStream.getCurrentTokenText();
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
       throw this._generateError(ctx, "Expected ';' after the statement");
@@ -227,7 +250,7 @@ export class Proto3Parser {
 
   private _handleOption(ctx: ParserContext): OptionNode {
     let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     let option = this._consumeOptionName(ctx);
 
@@ -239,7 +262,7 @@ export class Proto3Parser {
     ) {
       throw this._generateError(ctx, "Expected '=' after the option name");
     }
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     let value = this._consumeOptionValue(ctx);
     let valueType = value.type;
@@ -267,19 +290,19 @@ export class Proto3Parser {
 
   private _handleEnum(ctx: ParserContext): EnumNode {
     let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
-    if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+    if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
       throw this._generateError(ctx, "Expected enum name after 'enum'");
     }
 
     let name = ctx.tokenStream.getCurrentTokenText();
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.openBrace) {
       throw this._generateError(ctx, "Expected '{' after the enum name");
     }
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     const enumNode = new EnumNode(keywordToken.start, 0, name);
     getCurrent(ctx).add(enumNode);
@@ -289,16 +312,20 @@ export class Proto3Parser {
     while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
       switch (ctx.tokenStream.getCurrentToken().type) {
         case TokenType.keyword: {
+          let matched = false;
           switch ((ctx.tokenStream.getCurrentToken() as KeywordToken).keyword) {
             case KeywordType.option:
               this._handleOption(ctx);
+              matched = true;
               break;
             // TODO reserved.
           }
 
-          break;
+          if (matched) {
+            break;
+          }
+          // Fall through to identifier.
         }
-
         case TokenType.identifier: {
           this._handleEnumValue(ctx);
           break;
@@ -310,7 +337,7 @@ export class Proto3Parser {
           break;
         }
       }
-      ctx.tokenStream.moveNext();
+      moveNext(ctx);
     }
     enumNode.end =
       ctx.tokenStream.getCurrentToken().start +
@@ -322,7 +349,7 @@ export class Proto3Parser {
 
   private _handleEnumValue(ctx: ParserContext): EnumValueNode {
     let name = ctx.tokenStream.getCurrentTokenText();
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     if (
       !(
@@ -332,18 +359,18 @@ export class Proto3Parser {
     ) {
       throw this._generateError(ctx, "Expected '=' after the enum value name");
     }
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.integer) {
       throw this._generateError(ctx, "Expected number after '='");
     }
 
     let value = (ctx.tokenStream.getCurrentToken() as IntegerToken).text;
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     if (ctx.tokenStream.getCurrentToken().type === TokenType.openBracket) {
       this._handleFieldOption(ctx);
-      ctx.tokenStream.moveNext();
+      moveNext(ctx);
     }
 
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
@@ -365,19 +392,18 @@ export class Proto3Parser {
 
   private _handleMessage(ctx: ParserContext): MessageNode {
     let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
-    if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+    if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
       throw this._generateError(ctx, "Expected message name after 'message'");
     }
 
     let name = ctx.tokenStream.getCurrentTokenText();
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.openBrace) {
       throw this._generateError(ctx, "Expected '{' after the message name");
     }
-    ctx.tokenStream.moveNext();
 
     const message = new MessageNode(
       keywordToken.start,
@@ -388,33 +414,45 @@ export class Proto3Parser {
     message.setParent(getCurrent(ctx));
     ctx.current.push(message);
 
+    moveNext(ctx);
+
     while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
       switch (ctx.tokenStream.getCurrentToken().type) {
         case TokenType.keyword: {
+          let matched = false;
           switch ((ctx.tokenStream.getCurrentToken() as KeywordToken).keyword) {
             case KeywordType.option:
               this._handleOption(ctx);
+              matched = true;
               break;
             case KeywordType.message:
               this._handleMessage(ctx);
+              matched = true;
               break;
             case KeywordType.enum:
               this._handleEnum(ctx);
+              matched = true;
               break;
             case KeywordType.map:
             case KeywordType.repeated:
             case KeywordType.optional:
               // TODO: required keyword?
               this._handleField(ctx);
+              matched = true;
               break;
             case KeywordType.oneof:
+              this._handleOneof(ctx);
+              matched = true;
               break;
 
             // TODO reserved?
           }
-          break;
-        }
 
+          if (matched) {
+            break;
+          }
+          // Fall through to identifier.
+        }
         case TokenType.identifier:
         case TokenType.primitiveType: {
           this._handleField(ctx);
@@ -427,7 +465,7 @@ export class Proto3Parser {
           break;
         }
       }
-      ctx.tokenStream.moveNext();
+      moveNext(ctx);
     }
 
     message.end =
@@ -437,16 +475,59 @@ export class Proto3Parser {
     return message;
   }
 
+  private _handleOneof(ctx: ParserContext): OneofNode {
+    let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
+    moveNext(ctx);
+
+    if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
+      throw this._generateError(ctx, "Expected oneof name after 'oneof'");
+    }
+    let name = ctx.tokenStream.getCurrentTokenText();
+    moveNext(ctx);
+
+    if (ctx.tokenStream.getCurrentToken().type !== TokenType.openBrace) {
+      throw this._generateError(ctx, "Expected '{' after the oneof name");
+    }
+
+    const oneof = new OneofNode(keywordToken.start, keywordToken.start, name);
+    getCurrent(ctx).add(oneof);
+    oneof.setParent(getCurrent(ctx));
+    ctx.current.push(oneof);
+
+    moveNext(ctx);
+
+    while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
+      switch (ctx.tokenStream.getCurrentToken().type) {
+        case TokenType.semicolon: {
+          break;
+        }
+        case TokenType.identifier:
+        case TokenType.primitiveType: {
+          this._handleField(ctx);
+          break;
+        }
+        default: {
+          throw this._generateError(ctx, "Expected field in oneof");
+        }
+      }
+      moveNext(ctx);
+    }
+
+    oneof.end =
+      ctx.tokenStream.getCurrentToken().start +
+      ctx.tokenStream.getCurrentToken().length;
+    ctx.current.pop();
+    return oneof;
+  }
+
   // Parse field like `int32 foo = 1;`.
   private _handleField(ctx: ParserContext): FieldNode {
     const consumeType = (ctx: ParserContext): string => {
       if (ctx.tokenStream.getCurrentToken().type === TokenType.primitiveType) {
         let token = ctx.tokenStream.getCurrentTokenText();
-        ctx.tokenStream.moveNext();
+        moveNext(ctx);
         return token;
-      } else if (
-        ctx.tokenStream.getCurrentToken().type === TokenType.identifier
-      ) {
+      } else if (this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
         const ident = this._consumeFullIdentifier(ctx);
         return ident;
       }
@@ -460,35 +541,35 @@ export class Proto3Parser {
       switch ((ctx.tokenStream.getCurrentToken() as KeywordToken).keyword) {
         case KeywordType.map:
           type_ = "map";
-          ctx.tokenStream.moveNext();
+          moveNext(ctx);
 
           if (ctx.tokenStream.getCurrentToken().type !== TokenType.less) {
             throw this._generateError(ctx, "Expected '<' after 'map'");
           }
-          ctx.tokenStream.moveNext();
+          moveNext(ctx);
           type_ += "<" + consumeType(ctx);
 
           if (ctx.tokenStream.getCurrentToken().type !== TokenType.comma) {
             throw this._generateError(ctx, "Expected ',' after the type");
           }
-          ctx.tokenStream.moveNext();
+          moveNext(ctx);
           type_ += "," + consumeType(ctx);
 
           if (ctx.tokenStream.getCurrentToken().type !== TokenType.greater) {
             throw this._generateError(ctx, "Expected '>' after the type");
           }
           type_ += ">";
-          ctx.tokenStream.moveNext();
+          moveNext(ctx);
           break;
         case KeywordType.repeated:
-          ctx.tokenStream.moveNext();
+          moveNext(ctx);
 
           modifier = "repeated";
           type_ = consumeType(ctx);
           break;
 
         case KeywordType.optional:
-          ctx.tokenStream.moveNext();
+          moveNext(ctx);
 
           modifier = "optional";
           type_ = consumeType(ctx);
@@ -498,19 +579,17 @@ export class Proto3Parser {
       ctx.tokenStream.getCurrentToken().type === TokenType.primitiveType
     ) {
       type_ = consumeType(ctx);
-    } else if (
-      ctx.tokenStream.getCurrentToken().type === TokenType.identifier
-    ) {
+    } else if (this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
       type_ = consumeType(ctx);
     } else {
       throw this._generateError(ctx, "Expected field type");
     }
 
-    if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+    if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
       throw this._generateError(ctx, "Expected field name");
     }
     let name = ctx.tokenStream.getCurrentTokenText();
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     if (
       ctx.tokenStream.getCurrentToken().type !== TokenType.operator ||
@@ -518,18 +597,18 @@ export class Proto3Parser {
     ) {
       throw this._generateError(ctx, "Expected '=' after the field name");
     }
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.integer) {
       throw this._generateError(ctx, "Expected number after '='");
     }
     const fieldNumber = ctx.tokenStream.getCurrentTokenText();
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     let options: OptionNode[] = [];
     if (ctx.tokenStream.getCurrentToken().type === TokenType.openBracket) {
       options = this._handleFieldOption(ctx);
-      ctx.tokenStream.moveNext();
+      moveNext(ctx);
     }
 
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
@@ -556,7 +635,7 @@ export class Proto3Parser {
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.openBracket) {
       throw this._generateError(ctx, "Expected '[' after the field name");
     }
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     let options: OptionNode[] = [];
     while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket) {
@@ -568,7 +647,7 @@ export class Proto3Parser {
       ) {
         throw this._generateError(ctx, "Expected '=' after the option name");
       }
-      ctx.tokenStream.moveNext();
+      moveNext(ctx);
 
       let value = this._consumeOptionValue(ctx);
       let valueType = value.type;
@@ -584,7 +663,7 @@ export class Proto3Parser {
       );
 
       if (ctx.tokenStream.getCurrentToken().type === TokenType.comma) {
-        ctx.tokenStream.moveNext();
+        moveNext(ctx);
       } else if (
         ctx.tokenStream.getCurrentToken().type === TokenType.closeBracket
       ) {
@@ -603,7 +682,7 @@ export class Proto3Parser {
   private _consumeOptionName(ctx: ParserContext): string {
     let option = "";
     if (ctx.tokenStream.getCurrentToken().type === TokenType.openParenthesis) {
-      ctx.tokenStream.moveNext();
+      moveNext(ctx);
       option = "(" + this._consumeFullIdentifier(ctx);
 
       if (
@@ -612,10 +691,8 @@ export class Proto3Parser {
         throw this._generateError(ctx, "Expected ')' after the option path");
       }
       option += ")";
-      ctx.tokenStream.moveNext();
-    } else if (
-      ctx.tokenStream.getCurrentToken().type === TokenType.identifier
-    ) {
+      moveNext(ctx);
+    } else if (this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
       option = this._consumeFullIdentifier(ctx);
     } else {
       throw this._generateError(ctx, "Expected option name after 'option'");
@@ -623,12 +700,12 @@ export class Proto3Parser {
 
     while (ctx.tokenStream.getCurrentToken().type === TokenType.dot) {
       option += ".";
-      ctx.tokenStream.moveNext();
-      if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+      moveNext(ctx);
+      if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
         throw this._generateError(ctx, "Expected option name after '.'");
       }
       option += ctx.tokenStream.getCurrentTokenText();
-      ctx.tokenStream.moveNext();
+      moveNext(ctx);
     }
 
     return option;
@@ -651,47 +728,51 @@ export class Proto3Parser {
       );
     }
     let value = ctx.tokenStream.getCurrentToken();
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     return value;
   }
 
   private _consumeFullIdentifier(ctx: ParserContext): string {
     let result = "";
-    if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+    if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
       throw this._generateError(ctx, `Expected name`);
     }
     result += ctx.tokenStream.getCurrentTokenText();
-    ctx.tokenStream.moveNext();
+    moveNext(ctx);
 
     while (ctx.tokenStream.getCurrentToken().type === TokenType.dot) {
-      if (ctx.tokenStream.getNextToken().type !== TokenType.identifier) {
+      if (!this._canBeIdentifier(ctx.tokenStream.getNextToken())) {
+        // Keywords are allowed in names, but not in paths.
         throw this._generateError(ctx, `Unexpected token in name`);
       }
       result += ctx.tokenStream.getCurrentTokenText();
       result += ctx.tokenStream.getNextTokenText();
-      ctx.tokenStream.moveNext();
-      ctx.tokenStream.moveNext();
+      moveNext(ctx);
+      moveNext(ctx);
     }
 
     return result;
   }
 
+  private _canBeIdentifier(token: Token): boolean {
+    return (
+      token.type === TokenType.identifier || token.type === TokenType.keyword
+    );
+  }
+
   private _generateError(ctx: ParserContext, message: string): Error {
     let token = ctx.tokenStream.getCurrentToken();
-    let start = token.start;
+    let column = 1;
     let line = 1;
-    let column = 0;
-    for (let length of ctx.tokenStream.text
-      .split(/\r?\n/)
-      .map((line) => line.length)) {
-      if (start > length) {
-        start -= length;
+
+    for (let i = 0; i < token.start; i++) {
+      if (ctx.tokenStream.text[i] === "\n") {
+        column = 1;
         line++;
-      } else {
-        column = start;
-        break;
+        continue;
       }
+      column++;
     }
 
     return new Error(`Error at ${line}:${column}: ${message}`);

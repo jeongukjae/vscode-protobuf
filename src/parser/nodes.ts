@@ -57,11 +57,8 @@ export class DocumentNode extends Node {
 }
 
 export class CommentNode extends Node {
-  text: string;
-
-  constructor(start: number, end: number, text: string) {
+  constructor(start: number, end: number) {
     super(NodeType.comment, start, end);
-    this.text = text;
   }
 }
 
@@ -118,6 +115,15 @@ export class MessageNode extends Node {
 
   constructor(start: number, end: number, name: string) {
     super(NodeType.message, start, end);
+    this.name = name;
+  }
+}
+
+export class OneofNode extends Node {
+  name: string;
+
+  constructor(start: number, end: number, name: string) {
+    super(NodeType.oneof, start, end);
     this.name = name;
   }
 }

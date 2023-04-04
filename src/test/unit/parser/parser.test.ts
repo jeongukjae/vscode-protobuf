@@ -42,6 +42,7 @@ describe("Parser", () => {
     // basic syntax
     { input: `syntax = "proto3";` },
     { input: `package a.b.c;` },
+    { input: `package google.rpc.aa;` },
     { input: `import 'a.proto';` },
     { input: `import public 'a.proto';` },
 
@@ -59,14 +60,20 @@ describe("Parser", () => {
     { input: `message A { option (my_option).float_ = -3.3e+2; }` },
     { input: `message A { option (my_option).ident_ = IDENT; }` },
     { input: `message A { int32 a = 1; float b = 2; }` },
+    {
+      input: `message A { oneof c { int32 a = 1; float b = 2; } int32 d = 3; }`,
+    },
+    { input: `message rpc { string name = 1; }` },
 
     // enums
     { input: `enum EnumName { A = 1; }` },
     { input: `enum EnumName { ; A = 1 [(custom_option) = "hello world"]; }` },
+    { input: `enum EnumName { rpc = 1; }` },
   ].forEach((test) => {
     it(`parse success without error: \`${test.input}\``, () => {
       let parser = new Proto3Parser();
-      expect(() => parser.parse(test.input)).to.not.throw();
+
+      parser.parse(test.input);
     });
   });
 
@@ -87,6 +94,13 @@ message A {
 
     B b = 1;
     float c = 2;
+
+    oneof d {
+        int32 e = 3;
+        float f = 4;
+    }
+
+    int32 g = 5;
 }`;
 
     let parser = new Proto3Parser();
@@ -107,7 +121,7 @@ message A {
     let messageA = result.children![3] as MessageNode;
     expect(messageA.type).to.equal(NodeType.message);
     expect(messageA.name).to.equal("A");
-    expect(messageA.children).to.have.lengthOf(6);
+    expect(messageA.children).to.have.lengthOf(8);
 
     expect((messageA.children![0] as OptionNode).name).to.equal(
       "(my_option).bool_"
@@ -135,6 +149,19 @@ message A {
     expect((messageA.children![4] as FieldNode).dtype).to.equal("B");
     expect((messageA.children![5] as FieldNode).name).to.equal("c");
     expect((messageA.children![5] as FieldNode).dtype).to.equal("float");
+
+    expect(messageA.children![6].type).to.equal(NodeType.oneof);
+    expect(messageA.children![6].children).to.have.lengthOf(2);
+    expect(messageA.children![6].children![0]).to.be.instanceOf(FieldNode);
+    expect(messageA.children![6].children![1]).to.be.instanceOf(FieldNode);
+    expect((messageA.children![6].children![0] as FieldNode).name).to.equal(
+      "e"
+    );
+    expect((messageA.children![6].children![1] as FieldNode).name).to.equal(
+      "f"
+    );
+
+    expect((messageA.children![7] as FieldNode).name).to.equal("g");
   });
 
   describe("Parsing all sample files", () => {
@@ -144,7 +171,8 @@ message A {
         let parser = new Proto3Parser();
         const filepath = path.join(basedir, file);
         const content = fs.readFileSync(filepath, "utf8");
-        expect(() => parser.parse(content)).to.not.throw();
+
+        parser.parse(content);
       });
     });
   });
