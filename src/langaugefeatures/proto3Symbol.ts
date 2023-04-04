@@ -8,6 +8,7 @@ import {
   MessageNode,
   Node,
   NodeType,
+  OneofNode,
   OptionNode,
   PackageNode,
   SyntaxNode,
@@ -101,6 +102,23 @@ export const proto3SymbolProvider: vscode.DocumentSymbolProvider = {
               new vscode.Range(
                 document.positionAt(msgNode.start),
                 document.positionAt(msgNode.end)
+              )
+            )
+          );
+          result.push(symb);
+          break;
+
+        case NodeType.oneof:
+          const oneofNode = node as OneofNode;
+          symb = new vscode.SymbolInformation(
+            oneofNode.name,
+            vscode.SymbolKind.Field,
+            "",
+            new vscode.Location(
+              document.uri,
+              new vscode.Range(
+                document.positionAt(oneofNode.start),
+                document.positionAt(oneofNode.end)
               )
             )
           );
