@@ -14,6 +14,8 @@ import {
   EnumValueNode,
   OneofNode,
   OptionValueNode,
+  ServiceNode,
+  RPCNode,
 } from "./nodes";
 import { Proto3Tokenizer } from "./tokenizer";
 import {
@@ -89,26 +91,11 @@ export class Proto3Parser {
 
   private _handleToken(ctx: ParserContext) {
     switch (ctx.tokenStream.getCurrentToken().type) {
-      // case TokenType.comment: {
-      //   this._handleComment(ctx);
-      //   return;
-      // }
       case TokenType.keyword: {
         this._handleKeyword(ctx);
         return;
       }
     }
-  }
-
-  private _handleComment(ctx: ParserContext) {
-    let commentToken = ctx.tokenStream.getCurrentToken() as Comment;
-    let comment = new CommentNode(
-      commentToken.start,
-      commentToken.start + commentToken.length
-    );
-
-    comment.setParent(getCurrent(ctx));
-    getCurrent(ctx).add(comment);
   }
 
   private _handleKeyword(ctx: ParserContext) {
@@ -141,6 +128,11 @@ export class Proto3Parser {
 
       case KeywordType.enum: {
         this._handleEnum(ctx);
+        return;
+      }
+
+      case KeywordType.service: {
+        this._handleService(ctx);
         return;
       }
     }
@@ -678,6 +670,189 @@ export class Proto3Parser {
     return options;
   }
 
+  private _handleService(ctx: ParserContext): ServiceNode {
+    if (ctx.tokenStream.getCurrentToken().type !== TokenType.keyword) {
+      throw this._generateError(ctx, "Expected 'service' keyword");
+    }
+    let startToken = ctx.tokenStream.getCurrentToken();
+    moveNext(ctx);
+
+    if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
+      throw this._generateError(ctx, "Expected service name");
+    }
+    let name = ctx.tokenStream.getCurrentTokenText();
+    moveNext(ctx);
+
+    if (ctx.tokenStream.getCurrentToken().type !== TokenType.openBrace) {
+      throw this._generateError(ctx, "Expected '{' after the service name");
+    }
+
+    let service = new ServiceNode(
+      startToken.start,
+      ctx.tokenStream.getCurrentToken().start +
+        ctx.tokenStream.getCurrentToken().length,
+      name
+    );
+    getCurrent(ctx).add(service);
+    service.setParent(getCurrent(ctx));
+    ctx.current.push(service);
+
+    moveNext(ctx);
+    while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
+      switch (ctx.tokenStream.getCurrentToken().type) {
+        case TokenType.keyword:
+          switch ((ctx.tokenStream.getCurrentToken() as KeywordToken).keyword) {
+            case KeywordType.option:
+              this._handleOption(ctx);
+              break;
+            case KeywordType.rpc:
+              this._handleRPC(ctx);
+              break;
+          }
+
+          break;
+
+        default:
+          throw this._generateError(
+            ctx,
+            "Unexpected token in service block, got: " +
+              ctx.tokenStream.getCurrentTokenText()
+          );
+      }
+
+      moveNext(ctx);
+    }
+    ctx.current.pop();
+    service.end =
+      ctx.tokenStream.getCurrentToken().start +
+      ctx.tokenStream.getCurrentToken().length;
+    return service;
+  }
+
+  private _handleRPC(ctx: ParserContext): RPCNode {
+    if (ctx.tokenStream.getCurrentToken().type !== TokenType.keyword) {
+      throw this._generateError(ctx, "Expected 'rpc' keyword");
+    }
+    let startToken = ctx.tokenStream.getCurrentToken();
+    moveNext(ctx);
+
+    if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
+      throw this._generateError(ctx, "Expected RPC name");
+    }
+
+    let name = ctx.tokenStream.getCurrentTokenText();
+    moveNext(ctx);
+
+    if (ctx.tokenStream.getCurrentToken().type !== TokenType.openParenthesis) {
+      throw this._generateError(ctx, "Expected '(' after the RPC name");
+    }
+    moveNext(ctx);
+
+    let requestStream = false;
+    if (
+      ctx.tokenStream.getCurrentToken().type === TokenType.keyword &&
+      (ctx.tokenStream.getCurrentToken() as KeywordToken).keyword ===
+        KeywordType.stream
+    ) {
+      requestStream = true;
+      moveNext(ctx);
+    }
+
+    if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
+      throw this._generateError(ctx, "Expected request type");
+    }
+    let requestType = this._consumeFullIdentifier(ctx);
+
+    if (ctx.tokenStream.getCurrentToken().type !== TokenType.closeParenthesis) {
+      throw this._generateError(ctx, "Expected ')' after the request type");
+    }
+    moveNext(ctx);
+
+    if (
+      ctx.tokenStream.getCurrentToken().type !== TokenType.keyword &&
+      (ctx.tokenStream.getCurrentToken() as KeywordToken).keyword !==
+        KeywordType.returns
+    ) {
+      throw this._generateError(ctx, "Expected 'returns' keyword");
+    }
+    moveNext(ctx);
+
+    if (ctx.tokenStream.getCurrentToken().type !== TokenType.openParenthesis) {
+      throw this._generateError(
+        ctx,
+        "Expected '(' after the 'returns' keyword"
+      );
+    }
+    moveNext(ctx);
+
+    let responseStream = false;
+    if (
+      ctx.tokenStream.getCurrentToken().type === TokenType.keyword &&
+      (ctx.tokenStream.getCurrentToken() as KeywordToken).keyword ===
+        KeywordType.stream
+    ) {
+      responseStream = true;
+      moveNext(ctx);
+    }
+
+    if (!this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
+      throw this._generateError(ctx, "Expected response type");
+    }
+    let responseType = this._consumeFullIdentifier(ctx);
+
+    if (ctx.tokenStream.getCurrentToken().type !== TokenType.closeParenthesis) {
+      throw this._generateError(ctx, "Expected ')' after the response type");
+    }
+    moveNext(ctx);
+
+    let rpc = new RPCNode(
+      startToken.start,
+      ctx.tokenStream.getCurrentToken().start +
+        ctx.tokenStream.getCurrentToken().length,
+      name,
+      requestType,
+      requestStream,
+      responseType,
+      responseStream
+    );
+    getCurrent(ctx).add(rpc);
+    rpc.setParent(getCurrent(ctx));
+    ctx.current.push(rpc);
+
+    if (ctx.tokenStream.getCurrentToken().type === TokenType.openBrace) {
+      moveNext(ctx);
+
+      while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBrace) {
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.keyword) {
+          if (
+            (ctx.tokenStream.getCurrentToken() as KeywordToken).keyword ===
+            KeywordType.option
+          ) {
+            this._handleOption(ctx);
+          }
+        } else if (
+          ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon
+        ) {
+          throw this._generateError(ctx, "Expected 'option'");
+        }
+
+        moveNext(ctx);
+      }
+
+      if (ctx.tokenStream.getNextToken().type === TokenType.semicolon) {
+        moveNext(ctx);
+      }
+    } else if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
+      throw this._generateError(ctx, "Expected ';' after the RPC");
+    }
+
+    ctx.current.pop();
+    rpc.end =
+      ctx.tokenStream.getCurrentToken().start +
+      ctx.tokenStream.getCurrentToken().length;
+    return rpc;
+  }
+
   private _consumeOptionName(ctx: ParserContext): string {
     let option = "";
     if (ctx.tokenStream.getCurrentToken().type === TokenType.openParenthesis) {
@@ -714,7 +889,6 @@ export class Proto3Parser {
     // Handling simple literals.
     if (
       [
-        TokenType.string,
         TokenType.integer,
         TokenType.float,
         TokenType.boolean,
@@ -727,6 +901,25 @@ export class Proto3Parser {
         value.start + value.length,
         ctx.tokenStream.getCurrentTokenText()
       );
+    }
+
+    if (ctx.tokenStream.getCurrentToken().type === TokenType.string) {
+      let value = ctx.tokenStream.getCurrentToken();
+      let opt = new OptionValueNode(
+        value.start,
+        value.start + value.length,
+        ctx.tokenStream.getCurrentTokenText()
+      );
+
+      while (ctx.tokenStream.getNextToken().type === TokenType.string) {
+        moveNext(ctx);
+        opt.text += ctx.tokenStream.getCurrentTokenText();
+        opt.end =
+          ctx.tokenStream.getCurrentToken().start +
+          ctx.tokenStream.getCurrentToken().length;
+      }
+
+      return opt;
     }
 
     // Handling message literals.

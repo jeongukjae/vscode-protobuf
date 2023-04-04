@@ -11,6 +11,8 @@ import {
   OneofNode,
   OptionNode,
   PackageNode,
+  RPCNode,
+  ServiceNode,
   SyntaxNode,
 } from "../parser/nodes";
 import { Proto3Parser } from "../parser/parser";
@@ -84,6 +86,42 @@ export const proto3SymbolProvider: vscode.DocumentSymbolProvider = {
               new vscode.Range(
                 document.positionAt(packageNode.start),
                 document.positionAt(packageNode.end)
+              )
+            )
+          );
+          result.push(symb);
+          break;
+
+        case NodeType.service:
+          const serviceNode = node as ServiceNode;
+
+          symb = new vscode.SymbolInformation(
+            serviceNode.name,
+            vscode.SymbolKind.Interface,
+            "",
+            new vscode.Location(
+              document.uri,
+              new vscode.Range(
+                document.positionAt(serviceNode.start),
+                document.positionAt(serviceNode.end)
+              )
+            )
+          );
+          result.push(symb);
+          break;
+
+        case NodeType.rpc:
+          const rpcNode = node as RPCNode;
+
+          symb = new vscode.SymbolInformation(
+            rpcNode.name,
+            vscode.SymbolKind.Method,
+            "",
+            new vscode.Location(
+              document.uri,
+              new vscode.Range(
+                document.positionAt(rpcNode.start),
+                document.positionAt(rpcNode.end)
               )
             )
           );

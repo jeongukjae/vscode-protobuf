@@ -41,6 +41,7 @@ export const enum KeywordType {
   optional,
   reserved,
   to, // e.g. "reserved 1 to 15;"
+  stream, // used for rpc
 }
 
 export const keywordMap: { [key: string]: KeywordType } = {
@@ -61,6 +62,7 @@ export const keywordMap: { [key: string]: KeywordType } = {
   optional: KeywordType.optional,
   reserved: KeywordType.reserved,
   to: KeywordType.to,
+  stream: KeywordType.stream,
 };
 
 export const enum PrimitiveType {
