@@ -49,12 +49,13 @@ describe("Parser", () => {
     { input: `import 'a.proto';` },
     { input: `import public 'a.proto';` },
 
-    // option name
+    // option
     { input: `option (my_option) = true;` },
     { input: `option (my_option).option1 = true;` },
     { input: `option (my_option).name1.name2 = true;` },
     { input: `option my_option.name1.name2 = true;` },
     { input: `option name2 = true;` },
+    { input: `option name3 = "123" "456";` },
 
     // messages
     { input: `message A { option (my_option).bool_ = true; }` },

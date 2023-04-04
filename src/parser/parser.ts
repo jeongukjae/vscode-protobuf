@@ -936,7 +936,7 @@ export class Proto3Parser {
           throw this._generateError(ctx, "Expected identifier");
         }
 
-        let nameToken = ctx.tokenStream.getCurrentToken();
+        // let nameToken = ctx.tokenStream.getCurrentToken();
         moveNext(ctx);
 
         if (ctx.tokenStream.getCurrentToken().type !== TokenType.colon) {
