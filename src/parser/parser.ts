@@ -1,4 +1,3 @@
-// TODO: parse reserved keyword.
 // XXX: add empty statement node?
 import {
   CommentNode,
