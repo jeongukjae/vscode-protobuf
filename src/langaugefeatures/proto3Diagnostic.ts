@@ -42,7 +42,7 @@ function compileTempWithProtoc(
     return;
   }
 
-  let args = [];
+  let args: string[] = [];
   protocOption.get("arguments", []).forEach((arg: string) => {
     args.push(arg);
   });
@@ -63,6 +63,7 @@ function compileTempWithProtoc(
   args.push(document.fileName);
   let result = cp.spawnSync(protocPath, args);
   if (result.status === 0 || result.stderr.toString().length === 0) {
+    diag.set(document.uri, []);
     return; // no error
   }
 
@@ -143,7 +144,7 @@ function protocErrorToDiagnostic(
   let col = 0;
   for (var c of line.text) {
     col += c === "\t" ? 8 - (col % 8) : 1;
-    if (col >= startCol) {
+    if (col > startCol) {
       break;
     }
     startChar += 1;

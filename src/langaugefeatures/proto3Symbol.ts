@@ -15,9 +15,8 @@ import {
   ServiceNode,
   SyntaxNode,
 } from "../parser/nodes";
-import { Proto3Parser } from "../parser/parser";
+import { parseProto3 } from "../parsercache";
 
-const proto3Parser = new Proto3Parser();
 const cached: { [uri: string]: vscode.SymbolInformation[] } = {};
 
 export const proto3SymbolProvider: vscode.DocumentSymbolProvider = {
@@ -27,10 +26,9 @@ export const proto3SymbolProvider: vscode.DocumentSymbolProvider = {
   ): vscode.ProviderResult<vscode.SymbolInformation[]> {
     const result: vscode.SymbolInformation[] = [];
 
-    const text = document.getText();
     let docNode: DocumentNode;
     try {
-      docNode = proto3Parser.parse(text);
+      docNode = parseProto3(document);
     } catch (e) {
       console.log(e);
       // ignore the error and return cached result
