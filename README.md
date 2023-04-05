@@ -23,14 +23,14 @@ This extension contributes the following settings:
 | Setting | Description | Default |
 | --- | --- | --- |
 | `protobuf3.compiler.provider` | The compiler to use for compiling Protocol Buffers 3 files. | `protoc` |
-| `protobuf3.format.provider` | The formatter to use for formatting Protocol Buffers 3 files. |  |`clang-format`
+| `protobuf3.format.provider` | The formatter to use for formatting Protocol Buffers 3 files. |`clang-format`
 | `protobuf3.protoc.executable` | The path to the protoc executable. | `protoc` |
 | `protobuf3.protoc.arguments` | The arguments to pass to protoc. | `[]` |
 | `protobuf3.buf.executable` | The path to the buf executable. | `buf` |
 | `protobuf3.buf.arguments` | The arguments to pass to buf. | `[]` |
 | `protobuf3.clang-format.executable` | The path to the clang-format executable. | `clang-format` |
 | `protobuf3.clang-format.arguments` | The arguments to pass to clang-format. | `['-style=google']` |
-| `textproto.format.provider` | The formatter to use for formatting Protocol Buffers Text Format  |files. | `txtpbfmt`
+| `textproto.format.provider` | The formatter to use for formatting Protocol Buffers Text Format files. | `txtpbfmt`
 | `textproto.txtpbfmt.executable` | The path to the txtpbfmt executable. | `txtpbfmt` |
 | `textproto.txtpbfmt.arguments` | The arguments to pass to txtpbfmt. | `[]` |
 
