@@ -16,7 +16,6 @@ import {
   SyntaxNode,
 } from "../../../parser/nodes";
 import { Proto3Parser } from "../../../parser/parser";
-import { BooleanToken, FloatToken, IntegerToken } from "../../../parser/tokens";
 
 describe("Parser", () => {
   [
@@ -68,11 +67,21 @@ describe("Parser", () => {
       input: `message A { oneof c { int32 a = 1; float b = 2; } int32 d = 3; }`,
     },
     { input: `message rpc { string name = 1; }` },
+    { input: `message A { reserved 1, 3; }` },
+    { input: `message A { reserved 1 to 3; }` },
+    { input: `message A { reserved 1,2,3,1 to 3; }` },
+    { input: `message A { reserved "abc"; }` },
+    { input: `message A { reserved "abc", "cde"; }` },
 
     // enums
     { input: `enum EnumName { A = 1; }` },
     { input: `enum EnumName { ; A = 1 [(custom_option) = "hello world"]; }` },
     { input: `enum EnumName { rpc = 1; }` },
+    { input: `enum A { reserved 1, 3; }` },
+    { input: `enum A { reserved 1 to 3; }` },
+    { input: `enum A { reserved 1,2,3,1 to 3; }` },
+    { input: `message A { reserved "abc"; }` },
+    { input: `enum A { reserved "abc", "cde"; }` },
 
     // option value
     { input: `option (my_option).bool_ = true;` },

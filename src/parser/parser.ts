@@ -1,4 +1,3 @@
-// TODO: parse reserved keyword.
 // XXX: add empty statement node?
 import {
   CommentNode,
@@ -16,10 +15,10 @@ import {
   OptionValueNode,
   ServiceNode,
   RPCNode,
+  ReservedNode,
 } from "./nodes";
 import { Proto3Tokenizer } from "./tokenizer";
 import {
-  Comment,
   IntegerToken,
   KeywordToken,
   KeywordType,
@@ -310,6 +309,10 @@ export class Proto3Parser {
               this._handleOption(ctx);
               matched = true;
               break;
+            case KeywordType.reserved:
+              this._handleReserved(ctx);
+              matched = true;
+              break;
           }
 
           if (matched) {
@@ -434,6 +437,10 @@ export class Proto3Parser {
               this._handleOneof(ctx);
               matched = true;
               break;
+            case KeywordType.reserved:
+              this._handleReserved(ctx);
+              matched = true;
+              break;
           }
 
           if (matched) {
@@ -505,6 +512,71 @@ export class Proto3Parser {
       ctx.tokenStream.getCurrentToken().length;
     ctx.current.pop();
     return oneof;
+  }
+
+  private _handleReserved(ctx: ParserContext): ReservedNode {
+    let keywordToken = ctx.tokenStream.getCurrentToken() as KeywordToken;
+    moveNext(ctx);
+
+    if (ctx.tokenStream.getCurrentToken().type === TokenType.string) {
+      moveNext(ctx);
+
+      while (
+        ctx.tokenStream.getCurrentToken().type === TokenType.comma &&
+        ctx.tokenStream.getNextToken().type === TokenType.string
+      ) {
+        moveNext(ctx);
+        moveNext(ctx);
+      }
+    } else if (ctx.tokenStream.getCurrentToken().type === TokenType.integer) {
+      while (ctx.tokenStream.getCurrentToken().type === TokenType.integer) {
+        moveNext(ctx);
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.keyword) {
+          if (
+            (ctx.tokenStream.getCurrentToken() as KeywordToken).keyword !==
+            KeywordType.to
+          ) {
+            throw this._generateError(ctx, "Expected 'to' after integer");
+          }
+
+          moveNext(ctx);
+          if (ctx.tokenStream.getCurrentToken().type !== TokenType.integer) {
+            throw this._generateError(ctx, "Expected integer after 'to'");
+          }
+          moveNext(ctx);
+        }
+
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.comma) {
+          moveNext(ctx);
+        } else if (
+          ctx.tokenStream.getCurrentToken().type === TokenType.semicolon
+        ) {
+          break;
+        } else {
+          throw this._generateError(ctx, "Expected ',' or ';' after integer");
+        }
+      }
+    } else {
+      throw this._generateError(
+        ctx,
+        "Expected string or number after 'reserved'"
+      );
+    }
+
+    if (ctx.tokenStream.getCurrentToken().type !== TokenType.semicolon) {
+      throw this._generateError(ctx, "Expected ';' after 'reserved'");
+    }
+
+    const reserved = new ReservedNode(
+      keywordToken.start,
+      ctx.tokenStream.getCurrentToken().start +
+        ctx.tokenStream.getCurrentToken().length
+    );
+
+    getCurrent(ctx).add(reserved);
+    reserved.setParent(getCurrent(ctx));
+
+    return reserved;
   }
 
   // Parse field like `int32 foo = 1;`.

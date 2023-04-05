@@ -1,5 +1,3 @@
-import { Token, TokenType } from "./tokens";
-
 export const enum NodeType {
   invalid,
   empty,
@@ -156,6 +154,14 @@ export class FieldNode extends Node {
     this.dtype = dtype;
     this.modifier = modifier;
     this.options = options;
+  }
+}
+
+export class ReservedNode extends Node {
+  // we don't care about the values.
+
+  constructor(start: number, end: number) {
+    super(NodeType.reserved, start, end);
   }
 }
 
