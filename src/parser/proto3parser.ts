@@ -17,7 +17,7 @@ import {
   RPCNode,
   ReservedNode,
 } from "./nodes";
-import { Proto3Tokenizer } from "./tokenizer";
+import { Proto3Tokenizer } from "./proto3tokenizer";
 import {
   IntegerToken,
   KeywordToken,

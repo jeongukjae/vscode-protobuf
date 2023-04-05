@@ -1,6 +1,6 @@
 import { expect } from "chai";
 
-import { Proto3Tokenizer } from "../../../parser/tokenizer";
+import { Proto3Tokenizer } from "../../../parser/proto3tokenizer";
 import {
   Comment,
   IntegerToken,

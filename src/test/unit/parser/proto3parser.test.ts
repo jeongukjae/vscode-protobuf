@@ -15,7 +15,7 @@ import {
   ServiceNode,
   SyntaxNode,
 } from "../../../parser/nodes";
-import { Proto3Parser } from "../../../parser/parser";
+import { Proto3Parser } from "../../../parser/proto3parser";
 
 describe("Parser", () => {
   [

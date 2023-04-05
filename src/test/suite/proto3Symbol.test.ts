@@ -40,4 +40,6 @@ suite("Proto3 Symbol Provider", () => {
         expect(symbols[1].kind).to.equal(vscode.SymbolKind.Field);
       });
   });
+
+  // Add more tests here...
 });

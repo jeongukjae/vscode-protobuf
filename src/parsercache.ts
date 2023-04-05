@@ -2,7 +2,7 @@ import * as crypto from "crypto";
 import * as vscode from "vscode";
 
 import { DocumentNode } from "./parser/nodes";
-import { Proto3Parser } from "./parser/parser";
+import { Proto3Parser } from "./parser/proto3parser";
 
 interface Proto3Document {
   hash: string;
