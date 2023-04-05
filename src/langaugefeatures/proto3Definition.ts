@@ -145,7 +145,9 @@ const findFieldDefinition = (
           ),
         },
       ];
-      return new Promise((resolve) => {resolve(res)});
+      return new Promise((resolve) => {
+        resolve(res);
+      });
     }
   }
 
@@ -187,7 +189,10 @@ const findMessageInDocument = (
     return [];
   }
 
-  if (docNode.getPackage() === undefined || docNode.getPackage()?.name !== packageName) {
+  if (
+    docNode.getPackage() === undefined ||
+    docNode.getPackage()?.name !== packageName
+  ) {
     return [];
   }
 
