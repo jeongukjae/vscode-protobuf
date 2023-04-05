@@ -52,6 +52,25 @@ export class DocumentNode extends Node {
   constructor(start: number, end: number) {
     super(NodeType.document, start, end);
   }
+
+  getPackage(): PackageNode | undefined {
+    for (const child of this.children!) {
+      if (child.type === NodeType.package) {
+        return child as PackageNode;
+      }
+    }
+    return undefined;
+  }
+
+  listImports(): ImportNode[] {
+    const res: ImportNode[] = [];
+    for (const child of this.children!) {
+      if (child.type === NodeType.import) {
+        res.push(child as ImportNode);
+      }
+    }
+    return res;
+  }
 }
 
 export class CommentNode extends Node {
@@ -77,6 +96,16 @@ export class ImportNode extends Node {
     super(NodeType.import, start, end);
     this.path = path;
     this.modifier = modifier;
+  }
+
+  getImportPath(): string {
+    if (this.path.startsWith('"') && this.path.endsWith('"')) {
+      return this.path.substring(1, this.path.length - 1);
+    }
+    if (this.path.startsWith("'") && this.path.endsWith("'")) {
+      return this.path.substring(1, this.path.length - 1);
+    }
+    return this.path;
   }
 }
 

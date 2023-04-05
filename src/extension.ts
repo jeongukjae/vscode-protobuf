@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 
+import { proto3DefinitionProvider } from "./langaugefeatures/proto3Definition";
 import { doProto3Diagnostic } from "./langaugefeatures/proto3Diagnostic";
 import { proto3FormatProvider } from "./langaugefeatures/proto3Format";
 import { proto3SymbolProvider } from "./langaugefeatures/proto3Symbol";
@@ -17,6 +18,10 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.languages.registerDocumentSymbolProvider(
     "protobuf3",
     proto3SymbolProvider
+  );
+  vscode.languages.registerDefinitionProvider(
+    "protobuf3",
+    proto3DefinitionProvider
   );
   vscode.workspace.onDidOpenTextDocument((document) => {
     if (document.languageId === "protobuf3") {
