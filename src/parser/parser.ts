@@ -1,5 +1,5 @@
-// TODO: currently, cannot parse or add comments node.
-// TODO: currently, cannot parse rpc node.
+// TODO: parse reserved keyword.
+// XXX: add empty statement node?
 import {
   CommentNode,
   DocumentNode,
@@ -310,7 +310,6 @@ export class Proto3Parser {
               this._handleOption(ctx);
               matched = true;
               break;
-            // TODO reserved.
           }
 
           if (matched) {
@@ -325,7 +324,6 @@ export class Proto3Parser {
 
         case TokenType.semicolon: {
           // empty statement
-          // TODO: add empty statement node?
           break;
         }
       }
@@ -369,7 +367,7 @@ export class Proto3Parser {
       throw this._generateError(ctx, "Expected ';' after the statement");
     }
 
-    // TODO: option
+    // TODO: parse option?
     const val = new EnumValueNode(
       ctx.tokenStream.getCurrentToken().start,
       ctx.tokenStream.getCurrentToken().start +
@@ -436,8 +434,6 @@ export class Proto3Parser {
               this._handleOneof(ctx);
               matched = true;
               break;
-
-            // TODO reserved?
           }
 
           if (matched) {
@@ -453,7 +449,6 @@ export class Proto3Parser {
 
         case TokenType.semicolon: {
           // empty statement
-          // TODO: add empty statement node?
           break;
         }
       }
