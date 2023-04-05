@@ -1,4 +1,6 @@
+// https://protobuf.dev/reference/protobuf/proto3-spec/
 // XXX: add empty statement node?
+import { TokenStream } from "../tokenstream";
 import {
   CommentNode,
   DocumentNode,
@@ -17,7 +19,7 @@ import {
   RPCNode,
   ReservedNode,
 } from "./nodes";
-import { Proto3Tokenizer } from "./proto3tokenizer";
+import { Proto3Tokenizer } from "./tokenizer";
 import {
   IntegerToken,
   KeywordToken,
@@ -25,10 +27,9 @@ import {
   Token,
   TokenType,
 } from "./tokens";
-import { TokenStream } from "./tokenstream";
 
 export interface ParserContext {
-  tokenStream: TokenStream;
+  tokenStream: TokenStream<Token>;
   document: DocumentNode;
   current: Node[];
 }

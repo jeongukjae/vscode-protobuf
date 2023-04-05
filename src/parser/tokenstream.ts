@@ -1,11 +1,14 @@
-import { Token } from "./tokens";
+export interface StreamUnit {
+  start: number;
+  length: number;
+}
 
-export class TokenStream {
+export class TokenStream<T extends StreamUnit> {
   private _text: string;
-  private _tokens: Token[];
+  private _tokens: T[];
   private _position: number;
 
-  constructor(text: string, tokens: Token[]) {
+  constructor(text: string, tokens: T[]) {
     this._text = text;
     this._tokens = tokens;
     this._position = 0;
@@ -19,7 +22,7 @@ export class TokenStream {
     return this._position;
   }
 
-  getCurrentToken(): Token {
+  getCurrentToken(): T {
     return this._tokens[this._position];
   }
 
@@ -30,7 +33,7 @@ export class TokenStream {
     );
   }
 
-  getNextToken(): Token {
+  getNextToken(): T {
     return this._tokens[this._position + 1];
   }
 
@@ -41,7 +44,7 @@ export class TokenStream {
     );
   }
 
-  lookAhead(offset: number): Token | null {
+  lookAhead(offset: number): T | null {
     const pos = this._position + offset;
     if (pos >= this._tokens.length || pos < 0) {
       return null;

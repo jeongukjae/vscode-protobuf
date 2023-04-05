@@ -155,7 +155,7 @@
     "lint": "eslint src --ext ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "node ./out/test/runTest.js",
-    "unittest": "mocha src/test/unit/**/*.ts --require ts-node/register --watch-files src"
+    "unittest": "mocha \"src/test/unit/**/*.ts\" --require ts-node/register --watch-files src"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.1.1",

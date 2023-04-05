@@ -14,8 +14,8 @@ import {
   RPCNode,
   ServiceNode,
   SyntaxNode,
-} from "../../../parser/nodes";
-import { Proto3Parser } from "../../../parser/proto3parser";
+} from "../../../../parser/proto3/nodes";
+import { Proto3Parser } from "../../../../parser/proto3/parser";
 
 describe("Parser", () => {
   [

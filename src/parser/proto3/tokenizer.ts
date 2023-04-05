@@ -1,7 +1,15 @@
 // tokenizer.ts is for tokenizing the input string into tokens.
+// https://protobuf.dev/reference/protobuf/proto3-spec/
 import Char from "typescript-char";
 
-import { CharacterStream } from "./chstream";
+import { CharacterStream } from "../chstream";
+import {
+  canBeIdentifier,
+  canBeStartIdentifier,
+  isDecimal,
+  isHex,
+  isOctal,
+} from "../utils";
 import {
   BooleanToken,
   Comment,
@@ -14,13 +22,6 @@ import {
   Token,
   TokenType,
 } from "./tokens";
-import {
-  canBeIdentifier,
-  canBeStartIdentifier,
-  isDecimal,
-  isHex,
-  isOctal,
-} from "./utils";
 
 export interface TokenizerContext {
   tokens: Token[];

@@ -1,8 +1,8 @@
 import * as crypto from "crypto";
 import * as vscode from "vscode";
 
-import { DocumentNode } from "./parser/nodes";
-import { Proto3Parser } from "./parser/proto3parser";
+import { DocumentNode } from "./parser/proto3/nodes";
+import { Proto3Parser } from "./parser/proto3/parser";
 
 interface Proto3Document {
   hash: string;

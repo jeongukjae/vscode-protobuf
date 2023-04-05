@@ -1,6 +1,6 @@
 import { expect } from "chai";
 
-import { Proto3Tokenizer } from "../../../parser/proto3tokenizer";
+import { Proto3Tokenizer } from "../../../../parser/proto3/tokenizer";
 import {
   Comment,
   IntegerToken,
@@ -12,7 +12,7 @@ import {
   KeywordType,
   PrimitiveTypeToken,
   PrimitiveType,
-} from "../../../parser/tokens";
+} from "../../../../parser/proto3/tokens";
 
 describe("Tokenizer", () => {
   it("should tokenize", () => {
