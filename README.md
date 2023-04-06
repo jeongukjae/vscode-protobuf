@@ -7,6 +7,8 @@ vscode-protobuf provides additional features for editing Protocol Buffers and it
 * Syntax highlighting for Protocol Buffers and its text format.
 * Diagnostic messages for Protocol Buffers. (`protoc`, `buf`)
 * Code formatting for Protocol Buffers and its text format. (`clang-format`, `buf`, `txtpbfmt`)
+* Symbol provider for Protocol Buffers.
+* Go to definition for Protocol Buffers.
 
 <!-- Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
 
@@ -37,9 +39,14 @@ This extension contributes the following settings:
 ## TODO
 
 - [ ] Add support for compiling on save.
-- [ ] Add go to definition/declaration for message types.
+- [ ] Add go to definition/declaration for message types from text proto to proto.
 
 ## Release Notes
+
+### 0.2.0
+
+* Add symbolProvider for proto3
+* Add go to definition for proto3
 
 ### 0.1.0
 
