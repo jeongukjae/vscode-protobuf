@@ -7,8 +7,8 @@ import {
   MessageNode,
   Node,
   NodeType,
-} from "../parser/nodes";
-import { primitiveTypeMap } from "../parser/tokens";
+} from "../parser/proto3/nodes";
+import { primitiveTypeMap } from "../parser/proto3/tokens";
 import { parseProto3 } from "../parsercache";
 
 export const proto3DefinitionProvider: vscode.DefinitionProvider = {
@@ -164,7 +164,7 @@ const findFieldDefinition = (
   return Promise.all(
     documentNode
       .listImports()
-      .map(async (importNode): Promise<vscode.LocationLink[]> => {
+      .map(async (importNode: ImportNode): Promise<vscode.LocationLink[]> => {
         let files = await findFile(importNode.getImportPath());
         return Promise.all(
           files.map(async (uri): Promise<vscode.LocationLink[]> => {
