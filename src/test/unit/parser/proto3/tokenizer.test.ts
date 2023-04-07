@@ -331,4 +331,24 @@ message Outer {
       });
     });
   });
+
+  describe("regression tests", () => {
+    it("inf token", () => {
+      const input = `
+      // A Keyword criterion segment.
+      message Keyword {
+        // The AdGroupCriterion resource name.
+        optional string ad_group_criterion = 3;
+
+        // Keyword info.
+        KeywordInfo info = 2;
+      }
+      `;
+      const tokenizer = new Proto3Tokenizer();
+      const tokens = tokenizer.tokenize(input);
+
+      expect(tokens.length).to.equal(18);
+      expect(tokens[13].type).to.equal(TokenType.identifier);
+    });
+  });
 });

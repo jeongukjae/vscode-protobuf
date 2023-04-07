@@ -259,10 +259,12 @@ export class Proto3Tokenizer {
 
   private _canBeNumber(ctx: TokenizerContext): boolean {
     const charCanBeNumber = (
-      ch: number,
-      nextchar: number,
-      next2cahr: number
+      chstream: CharacterStream,
+      offset: number
     ): boolean => {
+      const ch = chstream.lookAhead(offset);
+      const nextchar = chstream.lookAhead(offset + 1);
+
       if (isDecimal(ch)) {
         return true;
       }
@@ -271,24 +273,31 @@ export class Proto3Tokenizer {
         return true;
       }
 
-      if (ch === Char.i && nextchar === Char.n && next2cahr === Char.f) {
+      const next2char = chstream.lookAhead(offset + 2);
+      const next3char = chstream.lookAhead(offset + 3);
+
+      if (
+        ch === Char.i &&
+        nextchar === Char.n &&
+        next2char === Char.f &&
+        !canBeIdentifier(next3char)
+      ) {
         return true;
       }
 
-      if (ch === Char.n && nextchar === Char.a && next2cahr === Char.n) {
+      if (
+        ch === Char.n &&
+        nextchar === Char.a &&
+        next2char === Char.n &&
+        !canBeIdentifier(next3char)
+      ) {
         return true;
       }
 
       return false;
     };
 
-    if (
-      charCanBeNumber(
-        ctx.chstream.getCurrentChar(),
-        ctx.chstream.nextChar,
-        ctx.chstream.lookAhead(2)
-      )
-    ) {
+    if (charCanBeNumber(ctx.chstream, 0)) {
       return true;
     }
 
@@ -296,13 +305,7 @@ export class Proto3Tokenizer {
       ctx.chstream.getCurrentChar() === Char.Hyphen ||
       ctx.chstream.getCurrentChar() === Char.Plus
     ) {
-      if (
-        charCanBeNumber(
-          ctx.chstream.nextChar,
-          ctx.chstream.lookAhead(2),
-          ctx.chstream.lookAhead(3)
-        )
-      ) {
+      if (charCanBeNumber(ctx.chstream, 1)) {
         return true;
       }
     }
