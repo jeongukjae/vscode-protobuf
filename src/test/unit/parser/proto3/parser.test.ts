@@ -1,6 +1,9 @@
+import * as AdmZip from "adm-zip";
 import { expect } from "chai";
+import { https } from "follow-redirects";
 import * as fs from "fs";
 import * as glob from "glob";
+import * as os from "os";
 import * as path from "path";
 
 import {
@@ -17,7 +20,7 @@ import {
 } from "../../../../parser/proto3/nodes";
 import { Proto3Parser } from "../../../../parser/proto3/parser";
 
-describe("Parser", () => {
+describe("Proto3Parser", () => {
   [
     { input: "syntax;", expectedError: "Expected '=' after 'syntax'" },
     {
@@ -262,6 +265,72 @@ service ServiceName {
         const content = fs.readFileSync(filepath, "utf8");
 
         parser.parse(content);
+      });
+    });
+  });
+
+  describe("Parsing sample repository without errors", () => {
+    // download sample repository in temp directory
+    const basedir = path.join(os.tmpdir(), "proto3-parser");
+    const repositories = [
+      {
+        owner: "googleapis",
+        repo: "googleapis",
+      },
+    ];
+
+    before(() => {
+      console.log(`Temp directory: ${basedir}`);
+
+      return Promise.all(
+        repositories.map((repo) => {
+          const url = `https://github.com/${repo.owner}/${repo.repo}/archive/HEAD.zip`;
+          const zipPath = path.join(basedir, repo.owner, `${repo.repo}.zip`);
+
+          return new Promise<void>((resolve, reject) => {
+            if (fs.existsSync(zipPath)) {
+              console.log(`Sample repository already downloaded: ${zipPath}`);
+              return resolve();
+            }
+
+            console.log(`Downloading sample repository: ${url} to ${zipPath}`);
+            fs.mkdirSync(path.dirname(zipPath), { recursive: true });
+            const zipFile = fs.createWriteStream(zipPath);
+            const request = https.get(url, (response) => {
+              response.pipe(zipFile, { end: true });
+
+              zipFile.on("finish", () => {
+                resolve();
+              });
+            });
+
+            request.on("error", (err) => {
+              reject(err);
+            });
+          });
+        })
+      );
+    });
+
+    repositories.forEach((repo) => {
+      it.skip("should parse all files without errors", () => {
+        // open zipfile
+        const zipPath = path.join(basedir, repo.owner, `${repo.repo}.zip`);
+
+        const zip = new AdmZip(zipPath);
+        zip.getEntries().forEach((entry) => {
+          if (entry.entryName.endsWith(".proto")) {
+            let parser = new Proto3Parser();
+            const content = zip.readAsText(entry);
+
+            try {
+              parser.parse(content);
+            } catch (err) {
+              console.log(`Error while parsing file: ${entry.entryName}`);
+              throw err;
+            }
+          }
+        });
       });
     });
   });

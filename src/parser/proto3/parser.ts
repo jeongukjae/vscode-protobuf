@@ -1007,10 +1007,19 @@ export class Proto3Parser {
         // let nameToken = ctx.tokenStream.getCurrentToken();
         moveNext(ctx);
 
-        if (ctx.tokenStream.getCurrentToken().type !== TokenType.colon) {
-          throw this._generateError(ctx, "Expected ':' after the identifier");
+        if (
+          ctx.tokenStream.getCurrentToken().type !== TokenType.colon &&
+          ctx.tokenStream.getCurrentToken().type !== TokenType.openBrace
+        ) {
+          throw this._generateError(
+            ctx,
+            "Expected ':' or '{' after the identifier"
+          );
         }
-        moveNext(ctx);
+
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.colon) {
+          moveNext(ctx);
+        }
 
         this._consumeOptionValue(ctx);
         moveNext(ctx);

@@ -155,11 +155,13 @@
     "lint": "eslint src --ext ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "node ./out/test/runTest.js",
-    "unittest": "mocha \"src/test/unit/**/*.ts\" --require ts-node/register --watch-files src"
+    "unittest": "mocha \"src/test/unit/**/*.ts\" --require ts-node/register --watch-files src --timeout 10000"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.1.1",
+    "@types/adm-zip": "^0.5.0",
     "@types/chai": "^4.3.4",
+    "@types/follow-redirects": "^1.14.1",
     "@types/glob": "^8.0.1",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
@@ -167,9 +169,11 @@
     "@typescript-eslint/eslint-plugin": "^5.49.0",
     "@typescript-eslint/parser": "^5.49.0",
     "@vscode/test-electron": "^2.2.2",
+    "adm-zip": "^0.5.10",
     "chai": "^4.3.7",
     "eslint": "^8.33.0",
     "eslint-plugin-prettier": "^4.2.1",
+    "follow-redirects": "^1.15.2",
     "glob": "^8.1.0",
     "mocha": "^10.1.0",
     "prettier": "^2.8.7",
