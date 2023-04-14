@@ -590,6 +590,13 @@ export class Proto3Parser {
       } else if (this._canBeIdentifier(ctx.tokenStream.getCurrentToken())) {
         const ident = this._consumeFullIdentifier(ctx);
         return ident;
+      } else if (
+        ctx.tokenStream.getCurrentToken().type === TokenType.dot &&
+        this._canBeIdentifier(ctx.tokenStream.getNextToken())
+      ) {
+        moveNext(ctx);
+        const ident = this._consumeFullIdentifier(ctx);
+        return "." + ident;
       }
       throw this._generateError(ctx, "Expected type");
     };

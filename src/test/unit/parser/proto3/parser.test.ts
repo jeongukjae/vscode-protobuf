@@ -75,6 +75,8 @@ describe("Proto3Parser", () => {
     { input: `message A { reserved 1,2,3,1 to 3; }` },
     { input: `message A { reserved "abc"; }` },
     { input: `message A { reserved "abc", "cde"; }` },
+    { input: `message A { .google.protobuf.Struct st_field = 1; }` },
+    { input: `message A { repeated .google.protobuf.Struct st_field = 1; }` },
 
     // enums
     { input: `enum EnumName { A = 1; }` },
@@ -313,12 +315,12 @@ service ServiceName {
     });
 
     repositories.forEach((repo) => {
-      it.skip("should parse all files without errors", () => {
-        // open zipfile
-        const zipPath = path.join(basedir, repo.owner, `${repo.repo}.zip`);
+      // open zipfile
+      const zipPath = path.join(basedir, repo.owner, `${repo.repo}.zip`);
 
-        const zip = new AdmZip(zipPath);
-        zip.getEntries().forEach((entry) => {
+      const zip = new AdmZip(zipPath);
+      zip.getEntries().forEach((entry) => {
+        it(`should parse file: ${entry.entryName}`, () => {
           if (entry.entryName.endsWith(".proto")) {
             let parser = new Proto3Parser();
             const content = zip.readAsText(entry);
