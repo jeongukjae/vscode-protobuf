@@ -22,8 +22,13 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
+    - name: Setup headless Xvfb
+      run: |
+        sudo apt-get install xvfb
+        Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
     - run: yarn
     - run: yarn lint
     - run: yarn unittest
-    # TODO: uncomment this step if e2e tests can be run in github action.
-    # - run: yarn test
+    - run: yarn test
+      env:
+        DISPLAY: ':99.0'
