@@ -14,7 +14,7 @@ import {
   PrimitiveType,
 } from "../../../../parser/proto3/tokens";
 
-describe("Tokenizer", () => {
+describe("Proto3Tokenizer", () => {
   it("should tokenize", () => {
     const input = `
 syntax = "proto3";
