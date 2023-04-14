@@ -282,8 +282,6 @@ service ServiceName {
     ];
 
     before(() => {
-      console.log(`Temp directory: ${basedir}`);
-
       return Promise.all(
         repositories.map((repo) => {
           const url = `https://github.com/${repo.owner}/${repo.repo}/archive/HEAD.zip`;
@@ -291,11 +289,9 @@ service ServiceName {
 
           return new Promise<void>((resolve, reject) => {
             if (fs.existsSync(zipPath)) {
-              console.log(`Sample repository already downloaded: ${zipPath}`);
               return resolve();
             }
 
-            console.log(`Downloading sample repository: ${url} to ${zipPath}`);
             fs.mkdirSync(path.dirname(zipPath), { recursive: true });
             const zipFile = fs.createWriteStream(zipPath);
             const request = https.get(url, (response) => {
@@ -315,12 +311,12 @@ service ServiceName {
     });
 
     repositories.forEach((repo) => {
-      // open zipfile
-      const zipPath = path.join(basedir, repo.owner, `${repo.repo}.zip`);
+      it(`should parse ${repo.owner}/${repo.repo}`, () => {
+        // open zipfile
+        const zipPath = path.join(basedir, repo.owner, `${repo.repo}.zip`);
 
-      const zip = new AdmZip(zipPath);
-      zip.getEntries().forEach((entry) => {
-        it(`should parse file: ${entry.entryName}`, () => {
+        const zip = new AdmZip(zipPath);
+        zip.getEntries().forEach((entry) => {
           if (entry.entryName.endsWith(".proto")) {
             let parser = new Proto3Parser();
             const content = zip.readAsText(entry);
