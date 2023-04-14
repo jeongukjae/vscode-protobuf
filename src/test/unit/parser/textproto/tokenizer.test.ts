@@ -205,4 +205,14 @@ describe("TextProtoTokenizer", () => {
       });
     });
   });
+
+  describe("Should fail", () => {
+    it("No space between literal and ident", () => {
+      const input = "foo: 10bar: 20";
+      const tokenizer = new TextProtoTokenizer();
+      expect(() => tokenizer.tokenize(input)).to.throw(
+        "Invalid number. whitespace expected"
+      );
+    });
+  });
 });

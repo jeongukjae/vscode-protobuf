@@ -147,6 +147,15 @@ export class TextProtoTokenizer {
       default: {
         if (this._canBeNumber(ctx)) {
           if (this._maybeHandleNumber(ctx)) {
+            if (
+              !ctx.chstream.isEndOfStream() &&
+              !ctx.chstream.isAtWhitespace()
+            ) {
+              throw this._generateError(
+                ctx,
+                "Invalid number. whitespace expected"
+              );
+            }
             return;
           }
         }
@@ -444,5 +453,21 @@ export class TextProtoTokenizer {
     ctx.tokens.push(Token.create(TokenType.invalid, ctx.chstream.position, 1));
     ctx.chstream.moveNext();
     return true;
+  }
+
+  private _generateError(ctx: TokenizerContext, message: string): Error {
+    let column = 1;
+    let line = 1;
+
+    for (let i = 0; i < ctx.chstream.position; i++) {
+      if (ctx.chstream.text[i] === "\n") {
+        column = 1;
+        line++;
+        continue;
+      }
+      column++;
+    }
+
+    return new Error(`Error at ${line}:${column}: ${message}`);
   }
 }
