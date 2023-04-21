@@ -54,3 +54,7 @@ TODOs are tracked in [GitHub issues](https://github.com/jeongukjae/vscode-protob
 ### 0.1.0
 
 Initial release of vscode-protobuf.
+
+## Contributing
+
+Contributions are always welcome, and feel free to file issues and suggestions in the [GitHub issue](https://github.com/jeongukjae/vscode-protobuf/issues)!
