@@ -1,9 +1,15 @@
 # Change Log
 
-All notable changes to the "protobuf" extension will be documented in this file.
+Changelog for vscode-proto3.
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+## [0.2.0](https://github.com/jeongukjae/vscode-protobuf/releases/tag/v0.2.0) - 2023-04-21
 
-## [Unreleased]
+### Added
 
-- Initial release
+* Add symbolProvider for proto3
+* Add go to definition for proto3
+* Add api-linter integration
+
+## [0.1.0](https://github.com/jeongukjae/vscode-protobuf/releases/tag/v0.1.0) - 2023-03-31
+
+Initial release.
