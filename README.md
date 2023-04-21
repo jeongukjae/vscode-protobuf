@@ -41,8 +41,7 @@ This extension contributes the following settings:
 
 ## TODO
 
-- [ ] Add support for compiling on save.
-- [ ] Add go to definition/declaration for message types from text proto to proto.
+TODOs are tracked in [GitHub issues](https://github.com/jeongukjae/vscode-protobuf/issues)
 
 ## Release Notes
 
