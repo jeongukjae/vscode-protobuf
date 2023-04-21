@@ -12,31 +12,33 @@ export const doProto3Diagnostic = (
   document: vscode.TextDocument,
   diag: vscode.DiagnosticCollection
 ) => {
-  doCompilerDiagnostic(document, diag);
-  doLinterDiagnostic(document, diag);
+  let diagnostics = doCompilerDiagnostic(document);
+  diagnostics = diagnostics.concat(doLinterDiagnostic(document));
+
+  diag.set(document.uri, diagnostics);
 };
 
 const doCompilerDiagnostic = (
-  document: vscode.TextDocument,
-  diag: vscode.DiagnosticCollection
-) => {
+  document: vscode.TextDocument
+): vscode.Diagnostic[] => {
   const protoCompilerOption =
     vscode.workspace.getConfiguration("protobuf3.compiler");
   const protoCompiler = protoCompilerOption.get("provider");
 
   if (protoCompiler === "protoc") {
-    compileTempWithProtoc(document, diag);
-  } else if (protoCompiler === "buf") {
-    lintWithBuf(document, diag);
-  } else {
-    vscode.window.showErrorMessage(`Unknown proto compiler: ${protoCompiler}`);
+    return compileTempWithProtoc(document);
   }
+  if (protoCompiler === "buf") {
+    return lintWithBuf(document);
+  }
+
+  vscode.window.showErrorMessage(`Unknown proto compiler: ${protoCompiler}`);
+  return [];
 };
 
 const doLinterDiagnostic = (
-  document: vscode.TextDocument,
-  diag: vscode.DiagnosticCollection
-) => {
+  document: vscode.TextDocument
+): vscode.Diagnostic[] => {
   const protoLinterOption =
     vscode.workspace.getConfiguration("protobuf3.linter");
   const protoLinter = protoLinterOption.get("provider");
@@ -46,21 +48,24 @@ const doLinterDiagnostic = (
   const protoCompiler = protoCompilerOption.get("provider");
 
   if (protoLinter === "api-linter") {
-    lintWithApiLinter(document, diag);
-  } else if (protoLinter === "buf") {
+    return lintWithApiLinter(document);
+  }
+
+  if (protoLinter === "buf") {
     if (protoCompiler !== "buf") {
       // buf linter is already run in the compiler step.
-      lintWithBuf(document, diag);
+      return lintWithBuf(document);
     }
-  } else {
-    vscode.window.showErrorMessage(`Unknown proto linter: ${protoLinter}`);
+    return [];
   }
+
+  vscode.window.showErrorMessage(`Unknown proto linter: ${protoLinter}`);
+  return [];
 };
 
 function compileTempWithProtoc(
-  document: vscode.TextDocument,
-  diag: vscode.DiagnosticCollection
-) {
+  document: vscode.TextDocument
+): vscode.Diagnostic[] {
   // Slightly modified from
   // https://github.com/zxh0/vscode-proto3/blob/master/src/proto3Diagnostic.ts
   // Big thanks to zxh0 for the original code!
@@ -74,7 +79,7 @@ function compileTempWithProtoc(
       `protoc (path: ${protocPath}) executable not found.\n` +
         `Check your PATH or install protoc.`
     );
-    return;
+    return [];
   }
 
   let args: string[] = [];
@@ -98,8 +103,7 @@ function compileTempWithProtoc(
   args.push(document.fileName);
   let result = cp.spawnSync(protocPath, args);
   if (result.status === 0 || result.stderr.toString().length === 0) {
-    diag.set(document.uri, []);
-    return; // no error
+    return []; // no error
   }
 
   let stderr = result.stderr.toString();
@@ -110,7 +114,7 @@ function compileTempWithProtoc(
     .map((lineString) => protocErrorToDiagnostic(document, lineString))
     .filter((diag): diag is vscode.Diagnostic => diag !== null);
 
-  diag.set(document.uri, diagnostics);
+  return diagnostics;
 }
 
 function protocErrorToDiagnostic(
@@ -145,14 +149,11 @@ function protocErrorToDiagnostic(
     endChar = startChar + tokenEnd.index;
   }
   let range = new vscode.Range(startLine, startChar, startLine, endChar);
-  let msg = errorInfo[3];
+  let msg = `protoc: ${errorInfo[3]}`;
   return new vscode.Diagnostic(range, msg, vscode.DiagnosticSeverity.Error);
 }
 
-function lintWithBuf(
-  document: vscode.TextDocument,
-  diag: vscode.DiagnosticCollection
-) {
+function lintWithBuf(document: vscode.TextDocument): vscode.Diagnostic[] {
   const bufOption = vscode.workspace.getConfiguration("protobuf3.buf");
   const bufPath = bufOption.get("executable", "buf");
 
@@ -161,7 +162,7 @@ function lintWithBuf(
       `buf (path: ${bufPath}) executable not found.\n` +
         `Check your PATH or install buf.`
     );
-    return;
+    return [];
   }
 
   let args = ["lint"];
@@ -182,10 +183,10 @@ function lintWithBuf(
     vscode.window.showErrorMessage(
       `buf (path: ${bufPath}) failed to run.\n${result.error.message}`
     );
-    return;
+    return [];
   }
   if (result.status !== null && result.status === 0) {
-    return;
+    return [];
   }
 
   const diagnostics: vscode.Diagnostic[] = result.stdout
@@ -195,7 +196,7 @@ function lintWithBuf(
     .map((line) => bufErrorToDiagnostic(document, line))
     .filter((diag): diag is vscode.Diagnostic => diag !== null);
 
-  diag.set(document.uri, diagnostics);
+  return diagnostics;
 }
 
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -231,15 +232,12 @@ function bufErrorToDiagnostic(
   let range = new vscode.Range(startLine, startCol, endLine, endCol);
   return new vscode.Diagnostic(
     range,
-    err.message,
+    `buf: ${err.message}`,
     vscode.DiagnosticSeverity.Error
   );
 }
 
-function lintWithApiLinter(
-  document: vscode.TextDocument,
-  diag: vscode.DiagnosticCollection
-) {
+function lintWithApiLinter(document: vscode.TextDocument): vscode.Diagnostic[] {
   const apiLinterOption = vscode.workspace.getConfiguration(
     "protobuf3.api-linter"
   );
@@ -256,7 +254,7 @@ function lintWithApiLinter(
         `Check your PATH or install api-linter.\n` +
         `See https://linter.aip.dev for more information.`
     );
-    return;
+    return [];
   }
 
   let args: string[] = [];
@@ -264,6 +262,7 @@ function lintWithApiLinter(
     args.push(arg);
   });
 
+  args.push("--output-format=json");
   args.push(document.fileName);
   let cwd = vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath;
   if (!cwd) {
@@ -275,13 +274,48 @@ function lintWithApiLinter(
     encoding: "utf-8",
   });
 
+  let diagnostics: vscode.Diagnostic[] = [];
   try {
-    // JSON.parse(result.stdout).filter(
-    //   (item) => item.file_path === document.fileName
-    // );
+    // TODO: Filter with file_path?
+    diagnostics = JSON.parse(result.stdout)
+      .flatMap((item: ApiLinterError) => item.problems)
+      .map((problem: ApiLinterProblem) => {
+        let range = new vscode.Range(
+          problem.location.start_position.line_number - 1,
+          problem.location.start_position.column_number - 1,
+          problem.location.end_position.line_number - 1,
+          problem.location.end_position.column_number - 1
+        );
+
+        let messsage = `api-linter: ${problem.message}`;
+        return new vscode.Diagnostic(range, messsage);
+      });
   } catch (e) {
     // If the output is not JSON, it should be a parse error.
     // And the error message should be shown from the compiler diagnostics.
-    return;
   }
+
+  return diagnostics;
+}
+
+interface ApiLinterError {
+  file_path: string;
+  problems: ApiLinterProblem[];
+}
+
+interface ApiLinterProblem {
+  message: string;
+  location: {
+    start_position: {
+      line_number: number;
+      column_number: number;
+    };
+    end_position: {
+      line_number: number;
+      column_number: number;
+    };
+  };
+
+  rule_id: string;
+  rule_doc_uri: string;
 }

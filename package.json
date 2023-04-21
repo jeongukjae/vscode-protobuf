@@ -46,7 +46,7 @@
           "description": "The formatter to use for formatting Protocol Buffers 3 files.",
           "scope": "resource"
         },
-        "protobuf3.lint.provider": {
+        "protobuf3.linter.provider": {
           "type": "string",
           "default": "api-linter",
           "enum": [
