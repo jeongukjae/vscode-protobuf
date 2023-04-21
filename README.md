@@ -5,8 +5,8 @@ vscode-protobuf provides additional features for editing Protocol Buffers and it
 ## Features
 
 * Syntax highlighting for Protocol Buffers and its text format.
-* Diagnostic messages for Protocol Buffers. (`protoc`, `buf`)
-* Code formatting for Protocol Buffers and its text format. (`clang-format`, `buf`, `txtpbfmt`)
+* Diagnostic messages (compile & lint) for Protocol Buffers. (`protoc`, `buf`, `api-linter`)
+* Code formatting for Protocol Buffers and its text format. (`clang-format` & `buf` for Protocol Buffers, `txtpbfmt` for text format)
 * Symbol provider for Protocol Buffers.
 * Go to definition for Protocol Buffers.
 
@@ -25,9 +25,12 @@ This extension contributes the following settings:
 | Setting | Description | Default |
 | --- | --- | --- |
 | `protobuf3.compiler.provider` | The compiler to use for compiling Protocol Buffers 3 files. | `protoc` |
-| `protobuf3.format.provider` | The formatter to use for formatting Protocol Buffers 3 files. |`clang-format`
+| `protobuf3.format.provider` | The formatter to use for formatting Protocol Buffers 3 files. |`clang-format` |
+| `protobuf3.linter.provider` | The linter to use for linting Protocol Buffers 3 files. | `api-linter` |
 | `protobuf3.protoc.executable` | The path to the protoc executable. | `protoc` |
 | `protobuf3.protoc.arguments` | The arguments to pass to protoc. | `[]` |
+| `protobuf3.api-linter.executable` | The path to the api-linter executable. | `api-linter` |
+| `protobuf3.api-linter.arguments` | The arguments to pass to api-linter. | `[]` |
 | `protobuf3.buf.executable` | The path to the buf executable. | `buf` |
 | `protobuf3.buf.arguments` | The arguments to pass to buf. | `[]` |
 | `protobuf3.clang-format.executable` | The path to the clang-format executable. | `clang-format` |
@@ -47,6 +50,7 @@ This extension contributes the following settings:
 
 * Add symbolProvider for proto3
 * Add go to definition for proto3
+* Add api-linter integration
 
 ### 0.1.0
 

@@ -46,6 +46,16 @@
           "description": "The formatter to use for formatting Protocol Buffers 3 files.",
           "scope": "resource"
         },
+        "protobuf3.linter.provider": {
+          "type": "string",
+          "default": "api-linter",
+          "enum": [
+            "api-linter",
+            "buf"
+          ],
+          "description": "The linter to use for linting Protocol Buffers 3 files.",
+          "scope": "resource"
+        },
         "protobuf3.protoc.executable": {
           "type": "string",
           "default": "protoc",
@@ -56,6 +66,18 @@
           "type": "array",
           "default": [],
           "description": "The arguments to pass to protoc.",
+          "scope": "resource"
+        },
+        "protobuf3.api-linter.executable": {
+          "type": "string",
+          "default": "api-linter",
+          "description": "The path to the api-linter executable.",
+          "scope": "resource"
+        },
+        "protobuf3.api-linter.arguments": {
+          "type": "array",
+          "default": [],
+          "description": "The arguments to pass to api-linter.",
           "scope": "resource"
         },
         "protobuf3.buf.executable": {
