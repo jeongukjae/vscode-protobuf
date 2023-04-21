@@ -25,7 +25,7 @@ This extension contributes the following settings:
 | Setting | Description | Default |
 | --- | --- | --- |
 | `protobuf3.compiler.provider` | The compiler to use for compiling Protocol Buffers 3 files. | `protoc` |
-| `protobuf3.format.provider` | The formatter to use for formatting Protocol Buffers 3 files. |`clang-format`
+| `protobuf3.format.provider` | The formatter to use for formatting Protocol Buffers 3 files. |`clang-format` |
 | `protobuf3.protoc.executable` | The path to the protoc executable. | `protoc` |
 | `protobuf3.protoc.arguments` | The arguments to pass to protoc. | `[]` |
 | `protobuf3.buf.executable` | The path to the buf executable. | `buf` |
