@@ -172,6 +172,7 @@
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",
+    "deploy": "vsce publish --yarn",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "yarn run compile && yarn run lint",
@@ -192,6 +193,7 @@
     "@typescript-eslint/eslint-plugin": "^5.49.0",
     "@typescript-eslint/parser": "^5.49.0",
     "@vscode/test-electron": "^2.2.2",
+    "@vscode/vsce": "^2.19.0",
     "adm-zip": "^0.5.10",
     "chai": "^4.3.7",
     "eslint": "^8.33.0",
