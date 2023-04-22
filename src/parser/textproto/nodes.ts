@@ -36,3 +36,15 @@ export abstract class Node {
     this.children.push(node);
   }
 }
+
+export class DocumentNode extends Node {
+  constructor(start: number, end: number) {
+    super(NodeType.document, start, end);
+  }
+}
+
+export class CommentNode extends Node {
+  constructor(start: number, end: number) {
+    super(NodeType.comment, start, end);
+  }
+}
