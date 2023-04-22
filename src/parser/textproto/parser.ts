@@ -62,12 +62,39 @@ export class TextProtoParser {
 
   private _parse(ctx: ParserContext) {
     do {
-      switch (ctx.tokenStream.getCurrentToken().type) {
-      }
+      this._handleValue(ctx);
       if (ctx.tokenStream.isEndOfStream()) {
         break;
       }
       moveNext(ctx);
     } while (true);
+  }
+
+  private _handleValue(ctx: ParserContext) {
+    if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+      throw this._generateError(
+        ctx,
+        `Expected identifier, but got ${ctx.tokenStream.getCurrentToken().type}`
+      );
+    }
+
+    // TODO: handle value
+  }
+
+  private _generateError(ctx: ParserContext, message: string): Error {
+    let token = ctx.tokenStream.getCurrentToken();
+    let column = 1;
+    let line = 1;
+
+    for (let i = 0; i < token.start; i++) {
+      if (ctx.tokenStream.text[i] === "\n") {
+        column = 1;
+        line++;
+        continue;
+      }
+      column++;
+    }
+
+    return new Error(`Error at ${line}:${column}: ${message}`);
   }
 }
