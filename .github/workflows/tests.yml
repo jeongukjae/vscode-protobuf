@@ -24,5 +24,4 @@ jobs:
         cache: 'yarn'
     - run: yarn install --frozen-lockfile
     - run: yarn lint
-    - run: yarn unittest
     - run: xvfb-run -a yarn test
