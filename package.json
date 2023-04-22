@@ -172,14 +172,16 @@
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",
+    "build": "vsce package --yarn",
     "deploy": "vsce publish --yarn",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
     "format": "prettier --write \"src/**/*.ts\"",
-    "test": "node ./out/test/runTest.js",
-    "unittest": "mocha \"src/test/unit/**/*.ts\" --require ts-node/register --watch-files src --timeout 10000"
+    "test": "yarn run test:unit && yarn run test:extension",
+    "pretest:extension": "yarn run compile",
+    "test:extension": "node ./out/test/runTest.js",
+    "test:unit": "mocha \"src/test/unit/**/*.ts\" --require ts-node/register --watch-files src --timeout 10000"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.1.1",
