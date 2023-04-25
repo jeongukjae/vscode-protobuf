@@ -2,7 +2,7 @@ import * as cp from "child_process";
 import * as os from "os";
 import * as vscode from "vscode";
 
-import { isCommandAvailable, isExecutableFileAvailable } from "../utils";
+import { isCommandAvailable, isExecutableFileAvailable } from "../../utils";
 
 export const proto3FormatProvider: vscode.DocumentFormattingEditProvider = {
   provideDocumentFormattingEdits(

@@ -3,7 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 
-import { isCommandAvailable, isExecutableFileAvailable } from "../utils";
+import { isCommandAvailable, isExecutableFileAvailable } from "../../utils";
 
 // Generate a diagnostic from following steps.
 // 1. Try to compile the proto file.

@@ -7,9 +7,9 @@ import {
   MessageNode,
   Node,
   NodeType,
-} from "../parser/proto3/nodes";
-import { primitiveTypeMap } from "../parser/proto3/tokens";
-import { parseProto3 } from "../parsercache";
+} from "../../parser/proto3/nodes";
+import { primitiveTypeMap } from "../../parser/proto3/tokens";
+import { parseProto3 } from "../../parsercache";
 
 export const proto3DefinitionProvider: vscode.DefinitionProvider = {
   provideDefinition: (

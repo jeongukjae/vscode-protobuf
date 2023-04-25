@@ -14,8 +14,8 @@ import {
   RPCNode,
   ServiceNode,
   SyntaxNode,
-} from "../parser/proto3/nodes";
-import { parseProto3 } from "../parsercache";
+} from "../../parser/proto3/nodes";
+import { parseProto3 } from "../../parsercache";
 
 const cached: { [uri: string]: vscode.SymbolInformation[] } = {};
 

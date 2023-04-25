@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 
-import { proto3DefinitionProvider } from "./langaugefeatures/proto3Definition";
-import { doProto3Diagnostic } from "./langaugefeatures/proto3Diagnostic";
-import { proto3FormatProvider } from "./langaugefeatures/proto3Format";
-import { proto3SymbolProvider } from "./langaugefeatures/proto3Symbol";
-import { textprotoFormatProvider } from "./langaugefeatures/textprotoFormat";
+import { proto3DefinitionProvider } from "./langaugefeatures/proto3/definition";
+import { doProto3Diagnostic } from "./langaugefeatures/proto3/diagnostic";
+import { proto3FormatProvider } from "./langaugefeatures/proto3/format";
+import { proto3SymbolProvider } from "./langaugefeatures/proto3/symbol";
+import { textprotoFormatProvider } from "./langaugefeatures/textproto/format";
 
 export function activate(context: vscode.ExtensionContext) {
   // proto3
