@@ -8,7 +8,6 @@ export const enum NodeType {
   header, // proto-file: and proto-message: directives
 
   field,
-  nestedField,
 }
 
 export abstract class Node {
@@ -49,16 +48,17 @@ export class CommentNode extends Node {
   }
 }
 
-// `key: value` type
-export class FieldNode extends Node {
-  constructor(start: number, end: number) {
-    super(NodeType.field, start, end);
-  }
-}
+export class ValueNode extends Node {
+  name: string;
+  nested: boolean = false;
 
-// `key: { key: value }` or `key { key: value }` type
-export class NestedFieldNode extends Node {
-  constructor(start: number, end: number) {
-    super(NodeType.nestedField, start, end);
+  constructor(name: string, start: number, end: number) {
+    super(NodeType.field, start, end);
+
+    this.name = name;
+  }
+
+  setNested(nested: boolean) {
+    this.nested = nested;
   }
 }

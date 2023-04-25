@@ -1,5 +1,6 @@
+// Specification: https://protobuf.dev/reference/protobuf/textformat-spec/
 import { TokenStream } from "../tokenstream";
-import { CommentNode, DocumentNode, Node } from "./nodes";
+import { CommentNode, DocumentNode, Node, ValueNode } from "./nodes";
 import { TextProtoTokenizer } from "./tokenizer";
 import { Token, TokenType } from "./tokens";
 
@@ -74,11 +75,86 @@ export class TextProtoParser {
     if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
       throw this._generateError(
         ctx,
-        `Expected identifier, but got ${ctx.tokenStream.getCurrentToken().type}`
+        `Expected identifier, but got ${ctx.tokenStream.getCurrentTokenText()}`
       );
     }
 
-    // TODO: handle value
+    // TODO: extension
+    let name = ctx.tokenStream.getCurrentToken();
+    let nameText = ctx.tokenStream.getCurrentTokenText();
+    moveNext(ctx);
+
+    let node = new ValueNode(nameText, name.start, 0);
+    getCurrent(ctx).add(node);
+    node.setParent(getCurrent(ctx));
+    ctx.current.push(node);
+
+    const handleNested = (lastTokenType: TokenType) => {
+      // recursive, message type
+      node.setNested(true);
+      moveNext(ctx);
+
+      while (ctx.tokenStream.getCurrentToken().type !== lastTokenType) {
+        this._handleValue(ctx);
+        moveNext(ctx);
+      }
+    };
+
+    if (ctx.tokenStream.getCurrentToken().type === TokenType.colon) {
+      moveNext(ctx);
+
+      if (ctx.tokenStream.getCurrentToken().type === TokenType.openBrace) {
+        handleNested(TokenType.closeBrace);
+      } else if (ctx.tokenStream.getCurrentToken().type === TokenType.less) {
+        handleNested(TokenType.greater);
+      } else {
+        // value
+        if (
+          ![
+            TokenType.string,
+            TokenType.integer,
+            TokenType.float,
+            TokenType.boolean,
+            TokenType.identifier,
+          ].includes(ctx.tokenStream.getCurrentToken().type)
+        ) {
+          throw this._generateError(
+            ctx,
+            `Expected value, but got ${ctx.tokenStream.getCurrentTokenText()}`
+          );
+        }
+
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.string) {
+          // handle successive strings as one string
+          while (
+            ctx.tokenStream.getNextToken() !== undefined &&
+            ctx.tokenStream.getNextToken().type === TokenType.string
+          ) {
+            moveNext(ctx);
+          }
+        }
+      }
+    } else if (ctx.tokenStream.getCurrentToken().type === TokenType.openBrace) {
+      handleNested(TokenType.closeBrace);
+    } else if (ctx.tokenStream.getCurrentToken().type === TokenType.less) {
+      handleNested(TokenType.greater);
+    } else {
+      throw this._generateError(
+        ctx,
+        `Expected colon, but got ${ctx.tokenStream.getCurrentTokenText()}`
+      );
+    }
+
+    if (
+      ctx.tokenStream.getNextToken() !== undefined &&
+      ctx.tokenStream.getNextToken().type === TokenType.comma
+    ) {
+      // skip last comma
+      moveNext(ctx);
+    }
+    node.end =
+      ctx.tokenStream.getCurrentToken().start +
+      ctx.tokenStream.getCurrentToken().length;
   }
 
   private _generateError(ctx: ParserContext, message: string): Error {
