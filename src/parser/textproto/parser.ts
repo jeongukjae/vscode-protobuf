@@ -72,19 +72,52 @@ export class TextProtoParser {
   }
 
   private _handleValue(ctx: ParserContext) {
-    if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+    let nameStartToken = ctx.tokenStream.getCurrentToken();
+    let nameText = "";
+
+    if (ctx.tokenStream.getCurrentToken().type === TokenType.identifier) {
+      nameText = ctx.tokenStream.getCurrentTokenText();
+    } else if (
+      ctx.tokenStream.getCurrentToken().type === TokenType.openBracket
+    ) {
+      // Extension. e.g. [com.example.ext_field], [com.example/ExtMessage]
+      moveNext(ctx);
+      while (
+        ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket
+      ) {
+        if (ctx.tokenStream.getCurrentToken().type !== TokenType.identifier) {
+          throw this._generateError(
+            ctx,
+            `Expected identifier, but got ${ctx.tokenStream.getCurrentTokenText()}`
+          );
+        }
+        nameText += ctx.tokenStream.getCurrentTokenText();
+        moveNext(ctx);
+
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.dot) {
+          nameText += ".";
+          moveNext(ctx);
+        } else if (ctx.tokenStream.getCurrentToken().type === TokenType.slash) {
+          nameText += "/";
+          moveNext(ctx);
+        } else if (
+          ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket
+        ) {
+          throw this._generateError(
+            ctx,
+            `Expected close bracket, but got ${ctx.tokenStream.getCurrentTokenText()}`
+          );
+        }
+      }
+    } else {
       throw this._generateError(
         ctx,
         `Expected identifier, but got ${ctx.tokenStream.getCurrentTokenText()}`
       );
     }
-
-    // TODO: extension
-    let name = ctx.tokenStream.getCurrentToken();
-    let nameText = ctx.tokenStream.getCurrentTokenText();
     moveNext(ctx);
 
-    let node = new ValueNode(nameText, name.start, 0);
+    let node = new ValueNode(nameText, nameStartToken.start, 0);
     getCurrent(ctx).add(node);
     node.setParent(getCurrent(ctx));
     ctx.current.push(node);
@@ -155,6 +188,7 @@ export class TextProtoParser {
     node.end =
       ctx.tokenStream.getCurrentToken().start +
       ctx.tokenStream.getCurrentToken().length;
+    ctx.current.pop();
   }
 
   private _generateError(ctx: ParserContext, message: string): Error {
