@@ -66,7 +66,7 @@ export class TextProtoParser {
 
   private _parse(ctx: ParserContext) {
     do {
-      this._handleValue(ctx);
+      this._handleField(ctx);
       if (ctx.tokenStream.isEndOfStream()) {
         break;
       }
@@ -78,7 +78,7 @@ export class TextProtoParser {
     } while (true);
   }
 
-  private _handleValue(ctx: ParserContext) {
+  private _handleField(ctx: ParserContext) {
     let nameStartToken = ctx.tokenStream.getCurrentToken();
     let nameText = "";
 
@@ -135,62 +135,48 @@ export class TextProtoParser {
       moveNext(ctx);
 
       while (ctx.tokenStream.getCurrentToken().type !== lastTokenType) {
-        this._handleValue(ctx);
+        this._handleField(ctx);
         moveNext(ctx);
+      }
+    };
+
+    const handleRepeated = () => {
+      moveNext(ctx);
+      while (
+        ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket
+      ) {
+        this._handleValue(ctx, node, handleNested);
+        moveNext(ctx);
+
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.comma) {
+          moveNext(ctx);
+        } else if (
+          ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket
+        ) {
+          throw this._generateError(
+            ctx,
+            `Expected close bracket, but got ${ctx.tokenStream.getCurrentTokenText()}`
+          );
+        }
       }
     };
 
     if (ctx.tokenStream.getCurrentToken().type === TokenType.colon) {
       moveNext(ctx);
 
-      if (ctx.tokenStream.getCurrentToken().type === TokenType.openBrace) {
-        handleNested(TokenType.closeBrace);
-      } else if (ctx.tokenStream.getCurrentToken().type === TokenType.less) {
-        handleNested(TokenType.greater);
-      } else if (ctx.tokenStream.getCurrentToken().type === TokenType.hyphen) {
-        moveNext(ctx);
-
-        if (
-          ![TokenType.float, TokenType.integer].includes(
-            ctx.tokenStream.getCurrentToken().type
-          )
-        ) {
-          throw this._generateError(
-            ctx,
-            `Expected number, but got ${ctx.tokenStream.getCurrentTokenText()}`
-          );
-        }
+      if (ctx.tokenStream.getCurrentToken().type === TokenType.openBracket) {
+        handleRepeated();
       } else {
-        // value
-        if (
-          ![
-            TokenType.string,
-            TokenType.integer,
-            TokenType.float,
-            TokenType.boolean,
-            TokenType.identifier,
-          ].includes(ctx.tokenStream.getCurrentToken().type)
-        ) {
-          throw this._generateError(
-            ctx,
-            `Expected value, but got ${ctx.tokenStream.getCurrentTokenText()}`
-          );
-        }
-
-        if (ctx.tokenStream.getCurrentToken().type === TokenType.string) {
-          // handle successive strings as one string
-          while (
-            ctx.tokenStream.getNextToken() !== undefined &&
-            ctx.tokenStream.getNextToken().type === TokenType.string
-          ) {
-            moveNext(ctx);
-          }
-        }
+        this._handleValue(ctx, node, handleNested);
       }
     } else if (ctx.tokenStream.getCurrentToken().type === TokenType.openBrace) {
       handleNested(TokenType.closeBrace);
     } else if (ctx.tokenStream.getCurrentToken().type === TokenType.less) {
       handleNested(TokenType.greater);
+    } else if (
+      ctx.tokenStream.getCurrentToken().type === TokenType.openBracket
+    ) {
+      handleRepeated();
     } else {
       throw this._generateError(
         ctx,
@@ -209,6 +195,58 @@ export class TextProtoParser {
       ctx.tokenStream.getCurrentToken().start +
       ctx.tokenStream.getCurrentToken().length;
     ctx.current.pop();
+  }
+
+  private _handleValue(
+    ctx: ParserContext,
+    node: ValueNode,
+    handleNested: (_: TokenType) => void
+  ) {
+    if (ctx.tokenStream.getCurrentToken().type === TokenType.openBrace) {
+      handleNested(TokenType.closeBrace);
+    } else if (ctx.tokenStream.getCurrentToken().type === TokenType.less) {
+      handleNested(TokenType.greater);
+    } else if (ctx.tokenStream.getCurrentToken().type === TokenType.hyphen) {
+      // with value (float or integer)
+      moveNext(ctx);
+
+      if (
+        ![TokenType.float, TokenType.integer].includes(
+          ctx.tokenStream.getCurrentToken().type
+        )
+      ) {
+        throw this._generateError(
+          ctx,
+          `Expected number, but got ${ctx.tokenStream.getCurrentTokenText()}`
+        );
+      }
+    } else {
+      // value
+      if (
+        ![
+          TokenType.string,
+          TokenType.integer,
+          TokenType.float,
+          TokenType.boolean,
+          TokenType.identifier,
+        ].includes(ctx.tokenStream.getCurrentToken().type)
+      ) {
+        throw this._generateError(
+          ctx,
+          `Expected value, but got ${ctx.tokenStream.getCurrentTokenText()}`
+        );
+      }
+
+      if (ctx.tokenStream.getCurrentToken().type === TokenType.string) {
+        // handle successive strings as one string
+        while (
+          ctx.tokenStream.getNextToken() !== undefined &&
+          ctx.tokenStream.getNextToken().type === TokenType.string
+        ) {
+          moveNext(ctx);
+        }
+      }
+    }
   }
 
   private _generateError(ctx: ParserContext, message: string): Error {

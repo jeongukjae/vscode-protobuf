@@ -193,4 +193,24 @@ describe("TextProtoParser", () => {
     expect(comment.start).equal(39);
     expect(comment.end).equal(code.length);
   });
+
+  it("Check repeated field", () => {
+    let code = `
+      foo: [1,2,3]
+    `;
+
+    let parser = new TextProtoParser();
+
+    let document = parser.parse(code);
+
+    expect(document.type).equal(NodeType.document);
+    expect(document.start).equal(0);
+    expect(document.end).equal(code.length);
+
+    let foo = document.children![0] as ValueNode;
+    expect(foo.type).equal(NodeType.field);
+    expect(foo.name).equal("foo");
+    expect(foo.start).equal(7);
+    expect(foo.end).equal(19);
+  });
 });

@@ -148,8 +148,11 @@ export class TextProtoTokenizer {
         if (this._canBeNumber(ctx)) {
           if (this._maybeHandleNumber(ctx)) {
             if (
-              !ctx.chstream.isEndOfStream() &&
-              !ctx.chstream.isAtWhitespace()
+              !(
+                ctx.chstream.isEndOfStream() ||
+                ctx.chstream.isAtWhitespace() ||
+                !canBeStartIdentifier(ctx.chstream.getCurrentChar())
+              )
             ) {
               throw this._generateError(
                 ctx,

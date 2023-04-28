@@ -215,4 +215,36 @@ describe("TextProtoTokenizer", () => {
       );
     });
   });
+
+  describe("Number tokenization error", () => {
+    [
+      { input: `foo: [1,2,3]` },
+      { input: `foo: [{foo: 213}]` },
+      { input: `foo: 10[com.foo.ext]: 20` },
+    ].forEach((test) => {
+      it(`should throw an error for invalid number: ${test.input}`, () => {
+        const tokenizer = new TextProtoTokenizer();
+        tokenizer.tokenize(test.input); // without error
+      });
+    });
+
+    it("check token", () => {
+      let code = `foo: [1,2,3]`;
+
+      const tokenizer = new TextProtoTokenizer();
+
+      let tokens = tokenizer.tokenize(code);
+
+      expect(tokens.length).to.equal(9);
+      expect(tokens[0].type).to.equal(TokenType.identifier);
+      expect(tokens[1].type).to.equal(TokenType.colon);
+      expect(tokens[2].type).to.equal(TokenType.openBracket);
+      expect(tokens[3].type).to.equal(TokenType.integer);
+      expect(tokens[4].type).to.equal(TokenType.comma);
+      expect(tokens[5].type).to.equal(TokenType.integer);
+      expect(tokens[6].type).to.equal(TokenType.comma);
+      expect(tokens[7].type).to.equal(TokenType.integer);
+      expect(tokens[8].type).to.equal(TokenType.closeBracket);
+    });
+  });
 });
