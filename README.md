@@ -45,12 +45,4 @@ TODOs are tracked in [GitHub issues](https://github.com/jeongukjae/vscode-protob
 
 ## Release Notes
 
-### 0.2.0
-
-* Add symbolProvider for proto3
-* Add go to definition for proto3
-* Add api-linter integration
-
-### 0.1.0
-
-Initial release of vscode-protobuf.
+Check [CHANGELOG.md](./CHANGELOG.md)

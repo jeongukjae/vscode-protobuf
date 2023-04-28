@@ -2,6 +2,12 @@
 
 Changelog for vscode-proto3.
 
+## [0.3.0](https://github.com/jeongukjae/vscode-protobuf/releases/tag/v0.2.0) - WIP
+
+### Added
+
+* Add Symbol Provider for Text Format
+
 ## [0.2.0](https://github.com/jeongukjae/vscode-protobuf/releases/tag/v0.2.0) - 2023-04-21
 
 ### Added
