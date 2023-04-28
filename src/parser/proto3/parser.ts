@@ -49,6 +49,9 @@ const moveNext = (ctx: ParserContext) => {
     );
     comment.setParent(getCurrent(ctx));
     getCurrent(ctx).add(comment);
+    if (ctx.tokenStream.isEndOfStream()) {
+      return;
+    }
     ctx.tokenStream.moveNext();
 
     while (ctx.tokenStream.getCurrentToken().type === TokenType.comment) {
@@ -86,6 +89,9 @@ export class Proto3Parser {
         break;
       }
       moveNext(ctx);
+      if (ctx.tokenStream.isEndOfStream()) {
+        break;
+      }
     } while (true);
   }
 

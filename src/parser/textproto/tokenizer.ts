@@ -170,6 +170,15 @@ export class TextProtoTokenizer {
           return;
         }
 
+        // just single hyphen. (when it is not part of number)
+        if (ctx.chstream.getCurrentChar() === Char.Hyphen) {
+          ctx.tokens.push(
+            Token.create(TokenType.hyphen, ctx.chstream.position, 1)
+          );
+          ctx.chstream.moveNext();
+          return;
+        }
+
         // true, and false are handled in _maybeHandleIdentifierAndKeyword.
         if (this._maybeHandleIdentifierAndKeyword(ctx)) {
           return;

@@ -5,6 +5,7 @@ export const enum TokenType {
   float,
   boolean,
   identifier,
+  hyphen,
   colon,
   semicolon,
   comma,

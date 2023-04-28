@@ -25,6 +25,9 @@ const moveNext = (ctx: ParserContext) => {
     );
     comment.setParent(getCurrent(ctx));
     getCurrent(ctx).add(comment);
+    if (ctx.tokenStream.isEndOfStream()) {
+      return;
+    }
     ctx.tokenStream.moveNext();
 
     while (ctx.tokenStream.getCurrentToken().type === TokenType.comment) {
@@ -67,7 +70,11 @@ export class TextProtoParser {
       if (ctx.tokenStream.isEndOfStream()) {
         break;
       }
+
       moveNext(ctx);
+      if (ctx.tokenStream.isEndOfStream()) {
+        break;
+      }
     } while (true);
   }
 
@@ -140,6 +147,19 @@ export class TextProtoParser {
         handleNested(TokenType.closeBrace);
       } else if (ctx.tokenStream.getCurrentToken().type === TokenType.less) {
         handleNested(TokenType.greater);
+      } else if (ctx.tokenStream.getCurrentToken().type === TokenType.hyphen) {
+        moveNext(ctx);
+
+        if (
+          ![TokenType.float, TokenType.integer].includes(
+            ctx.tokenStream.getCurrentToken().type
+          )
+        ) {
+          throw this._generateError(
+            ctx,
+            `Expected number, but got ${ctx.tokenStream.getCurrentTokenText()}`
+          );
+        }
       } else {
         // value
         if (

@@ -26,6 +26,13 @@ describe("TextProtoParser", () => {
       }
     `,
     },
+    { input: `foo: -213` },
+    { input: `foo: -213f` },
+    {
+      input: `value: -
+      # comment
+      2.0         # Valid: whitespace and comments between '-' and '2.0'.`,
+    },
     {
       input: `quote:
         "When we got into office, the thing that surprised me most was to find "
@@ -160,5 +167,30 @@ describe("TextProtoParser", () => {
     expect(floatField2.name).equal("float_field");
     expect(floatField2.start).equal(144);
     expect(floatField2.end).equal(162);
+  });
+
+  it("Check comment inside float literal", () => {
+    let code = `value: -
+    # comment
+    2.0         # Valid: whitespace and comments between '-' and '2.0'.`;
+    let parser = new TextProtoParser();
+
+    let document = parser.parse(code);
+
+    expect(document.type).equal(NodeType.document);
+    expect(document.start).equal(0);
+    expect(document.end).equal(code.length);
+    expect(document.children!.length).equal(2);
+
+    let value = document.children![0] as ValueNode;
+    expect(value.type).equal(NodeType.field);
+    expect(value.name).equal("value");
+    expect(value.start).equal(0);
+    expect(value.end).equal(30);
+
+    let comment = document.children![1] as CommentNode;
+    expect(comment.type).equal(NodeType.comment);
+    expect(comment.start).equal(39);
+    expect(comment.end).equal(code.length);
   });
 });

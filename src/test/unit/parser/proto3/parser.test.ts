@@ -122,6 +122,14 @@ describe("Proto3Parser", () => {
         }
       }`,
     },
+
+    // ends with comment
+    {
+      input: `
+      service ServiceName {
+      }
+      // comment`,
+    },
   ].forEach((test) => {
     it(`parse success without error: \`${test.input}\``, () => {
       let parser = new Proto3Parser();
