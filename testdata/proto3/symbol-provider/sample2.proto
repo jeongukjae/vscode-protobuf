@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package foo.bar;
+
+option java_package = "com.example.foo.bar";
+
+message FooMsg {
+    float a = 1; ; ; ;
+    oneof b {
+        int32 c = 2;
+        int64 d = 3;
+    }
+}
+
+enum Bar {
+    BAZ = 0;
+}
+
+service Baz {
+    rpc Foo (FooMsg) returns (FooMsg);
+}

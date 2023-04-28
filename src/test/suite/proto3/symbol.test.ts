@@ -1,14 +1,18 @@
 import { expect } from "chai";
+import * as path from "path";
 import * as vscode from "vscode";
 
 import { proto3SymbolProvider } from "../../../langaugefeatures/proto3/symbol";
+import { rootPath } from "../util";
+
+const testFolder = path.resolve(rootPath, "testdata/proto3/symbol-provider");
 
 suite("Proto3 Symbol Provider", () => {
   vscode.window.showInformationMessage("Start proto3SymbolProvider tests.");
 
   test("Should provide message type", async () => {
     return vscode.workspace
-      .openTextDocument({ language: "proto3", content: "message Foo { }" })
+      .openTextDocument(`${testFolder}/sample1.proto`)
       .then((doc) => {
         const symbols = proto3SymbolProvider.provideDocumentSymbols(
           doc,
@@ -23,32 +27,7 @@ suite("Proto3 Symbol Provider", () => {
 
   test("Should provide these symbols", async () => {
     return vscode.workspace
-      .openTextDocument({
-        language: "proto3",
-        content: `
-        syntax = "proto3";
-
-        package foo.bar;
-
-        option java_package = "com.example.foo.bar";
-
-        message Foo {
-          float a = 1; ; ; ;
-          oneof b {
-            int32 c = 2;
-            int64 d = 3;
-          }
-        }
-
-        enum Bar {
-          BAZ = 0;
-        }
-
-        service Baz {
-          rpc Foo (Foo) returns (Foo);
-        }
-        `,
-      })
+      .openTextDocument(`${testFolder}/sample2.proto`)
       .then((doc) => {
         const symbols = proto3SymbolProvider.provideDocumentSymbols(
           doc,
@@ -64,7 +43,7 @@ suite("Proto3 Symbol Provider", () => {
         expect(symbols[2].name).to.equal("java_package");
         expect(symbols[2].kind).to.equal(vscode.SymbolKind.Variable);
 
-        expect(symbols[3].name).to.equal("Foo");
+        expect(symbols[3].name).to.equal("FooMsg");
         expect(symbols[3].kind).to.equal(vscode.SymbolKind.Class);
 
         expect(symbols[4].name).to.equal("a");
@@ -94,6 +73,4 @@ suite("Proto3 Symbol Provider", () => {
         expect(symbols.length).to.equal(12);
       });
   });
-
-  // Add more tests here...
 });

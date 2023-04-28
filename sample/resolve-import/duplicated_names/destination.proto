@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package resolve_import;
-
-message Foo {
-
-}

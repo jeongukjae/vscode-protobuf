@@ -1,5 +1,0 @@
-{
-    "protobuf3.format.provider": "clang-format",
-    "protobuf3.compiler.provider": "protoc",
-    "protobuf3.linter.provider": "api-linter"
-}
