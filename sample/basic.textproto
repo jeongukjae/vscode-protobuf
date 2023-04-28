@@ -7,3 +7,5 @@ my_map {
   key: "key1"
   value: "value1"
 }
+
+repeated: [1,2,3]

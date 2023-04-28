@@ -186,9 +186,10 @@ export class TextProtoParser {
 
     if (
       ctx.tokenStream.getNextToken() !== undefined &&
-      ctx.tokenStream.getNextToken().type === TokenType.comma
+      (ctx.tokenStream.getNextToken().type === TokenType.comma ||
+        ctx.tokenStream.getNextToken().type === TokenType.semicolon)
     ) {
-      // skip last comma
+      // skip last comma or semicolon
       moveNext(ctx);
     }
     node.end =
