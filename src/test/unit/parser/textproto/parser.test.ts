@@ -15,6 +15,8 @@ describe("TextProtoParser", () => {
     { input: "foo: 213f" },
     { input: "foo: 21.3f" },
     { input: "foo: 21.3f bar: 'abc'" },
+    { input: "foo: 21.3f; bar: 'abc'" },
+    { input: "foo: 21.3f, bar: 'abc'" },
     { input: "[com.foo.ext.scalar]: 10" },
     { input: "[com.foo.ext.message]: {foo:'bar'}" },
     {
