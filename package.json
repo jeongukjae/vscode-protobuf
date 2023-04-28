@@ -8,7 +8,7 @@
   },
   "displayName": "Protocol Buffers",
   "description": "A VSCode Extension for Protocol Buffers",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "engines": {
     "vscode": "^1.75.0"
   },
