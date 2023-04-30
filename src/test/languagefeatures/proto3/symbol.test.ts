@@ -2,7 +2,7 @@ import { expect } from "chai";
 import * as vscode from "vscode";
 
 import { proto3SymbolProvider } from "../../../langaugefeatures/proto3/symbol";
-import { rootPath } from "../util";
+import { rootPath } from "../../util";
 
 suite("Proto3 Symbol Provider", () => {
   vscode.window.showInformationMessage("Start proto3SymbolProvider tests.");

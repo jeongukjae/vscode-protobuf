@@ -4,10 +4,10 @@ import {
   CommentNode,
   NodeType,
   ValueNode,
-} from "../../../../parser/textproto/nodes";
-import { TextProtoParser } from "../../../../parser/textproto/parser";
+} from "../../../parser/textproto/nodes";
+import { TextProtoParser } from "../../../parser/textproto/parser";
 
-describe("TextProtoParser", () => {
+suite("TextProtoParser", () => {
   [
     { input: "foo: bar" },
     { input: `foo: 12` },
@@ -82,14 +82,14 @@ describe("TextProtoParser", () => {
         foo: bar
       }`,
     },
-  ].forEach((test) => {
-    it(`should parse ${test.input}`, () => {
+  ].forEach((tc) => {
+    test(`should parse ${tc.input}`, () => {
       let parser = new TextProtoParser();
-      let document = parser.parse(test.input);
+      let document = parser.parse(tc.input);
 
       expect(document.type).equal(NodeType.document);
       expect(document.start).equal(0);
-      expect(document.end).equal(test.input.length);
+      expect(document.end).equal(tc.input.length);
     });
   });
 
@@ -100,14 +100,14 @@ describe("TextProtoParser", () => {
       >`,
       error: "Expected identifier, but got >",
     },
-  ].forEach((test) => {
-    it(`should fail to parse: ${test.input}`, () => {
+  ].forEach((tc) => {
+    test(`should fail to parse: ${tc.input}`, () => {
       let parser = new TextProtoParser();
-      expect(() => parser.parse(test.input)).to.throw(test.error);
+      expect(() => parser.parse(tc.input)).to.throw(tc.error);
     });
   });
 
-  it("Check Output", () => {
+  test("Check Output", () => {
     let parser = new TextProtoParser();
     let document = parser.parse(`
     enum_field: BAR float_field: 1.23
@@ -171,7 +171,7 @@ describe("TextProtoParser", () => {
     expect(floatField2.end).equal(162);
   });
 
-  it("Check comment inside float literal", () => {
+  test("Check comment inside float literal", () => {
     let code = `value: -
     # comment
     2.0         # Valid: whitespace and comments between '-' and '2.0'.`;
@@ -196,7 +196,7 @@ describe("TextProtoParser", () => {
     expect(comment.end).equal(code.length);
   });
 
-  it("Check repeated field", () => {
+  test("Check repeated field", () => {
     let code = `
       foo: [1,2,3]
     `;

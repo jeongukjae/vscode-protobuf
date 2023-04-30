@@ -1,6 +1,6 @@
 import { expect } from "chai";
 
-import { Proto3Tokenizer } from "../../../../parser/proto3/tokenizer";
+import { Proto3Tokenizer } from "../../../parser/proto3/tokenizer";
 import {
   Comment,
   IntegerToken,
@@ -12,10 +12,10 @@ import {
   KeywordType,
   PrimitiveTypeToken,
   PrimitiveType,
-} from "../../../../parser/proto3/tokens";
+} from "../../../parser/proto3/tokens";
 
-describe("Proto3Tokenizer", () => {
-  it("should tokenize", () => {
+suite("Proto3Tokenizer", () => {
+  test("should tokenize", () => {
     const input = `
 syntax = "proto3";
 
@@ -156,26 +156,26 @@ message Outer {
   });
 
   [{ input: "-inf", expected: [new FloatToken(0, 4, "-inf")] }].forEach(
-    (test) => {
-      it(`should tokenize ${test.input}`, () => {
+    (tc) => {
+      test(`should tokenize ${tc.input}`, () => {
         const tokenizer = new Proto3Tokenizer();
-        const tokens = tokenizer.tokenize(test.input);
+        const tokens = tokenizer.tokenize(tc.input);
 
         for (let i = 0; i < tokens.length; i++) {
           const token = tokens[i];
-          const expected = test.expected[i];
+          const expected = tc.expected[i];
 
           expect(token.type).to.equal(expected.type, `Token ${i} type`);
           expect(token.start).to.equal(expected.start, `Token ${i} start`);
           expect(token.length).to.equal(expected.length, `Token ${i} length`);
         }
-        expect(tokens.length).to.equal(test.expected.length);
+        expect(tokens.length).to.equal(tc.expected.length);
       });
     }
   );
 
-  describe("Comment", () => {
-    it("should tokenize a single line comment", () => {
+  suite("Comment", () => {
+    test("should tokenize a single line comment", () => {
       const input = "// this is a single line comment";
       const tokenizer = new Proto3Tokenizer();
       const tokens = tokenizer.tokenize(input);
@@ -187,7 +187,7 @@ message Outer {
       expect((tokens[0] as Comment).isBlock).to.equal(false);
     });
 
-    it("should tokenize a block line comment", () => {
+    test("should tokenize a block line comment", () => {
       const input = "/* this is a block line comment */";
       const tokenizer = new Proto3Tokenizer();
       const tokens = tokenizer.tokenize(input);
@@ -199,7 +199,7 @@ message Outer {
       expect((tokens[0] as Comment).isBlock).to.equal(true);
     });
 
-    it("should tokenize a single line comment with leading whitespace", () => {
+    test("should tokenize a single line comment with leading whitespace", () => {
       const input = "    // this is a single line comment";
       const tokenizer = new Proto3Tokenizer();
       const tokens = tokenizer.tokenize(input);
@@ -211,7 +211,7 @@ message Outer {
       expect((tokens[0] as Comment).isBlock).to.equal(false);
     });
 
-    it("should tokenize a block line comment with leading whitespace", () => {
+    test("should tokenize a block line comment with leading whitespace", () => {
       const input = "    \n/* this is a block line comment */\n";
       const tokenizer = new Proto3Tokenizer();
       const tokens = tokenizer.tokenize(input);
@@ -223,7 +223,7 @@ message Outer {
       expect((tokens[0] as Comment).isBlock).to.equal(true);
     });
 
-    it("should tokenize a multi line comment", () => {
+    test("should tokenize a multi line comment", () => {
       const input =
         "/* this is a block line comment\n* that spans multiple lines\n*/";
       const tokenizer = new Proto3Tokenizer();
@@ -237,7 +237,7 @@ message Outer {
     });
   });
 
-  describe("String", () => {
+  suite("String", () => {
     [
       { name: "double quote", input: '"this is a string"' },
       { name: "single quote", input: "'this is a string'" },
@@ -246,20 +246,20 @@ message Outer {
       { name: "char escape", input: "'this is a \\n string'" },
       { name: "quote scape", input: "'this is a \\' string'" },
       { name: "backslash escape", input: "'this is a \\\\ string'" },
-    ].forEach((test) => {
-      it(`should tokenize a string: ${test.name}`, () => {
+    ].forEach((tc) => {
+      test(`should tokenize a string: ${tc.name}`, () => {
         const tokenizer = new Proto3Tokenizer();
-        const tokens = tokenizer.tokenize(test.input);
+        const tokens = tokenizer.tokenize(tc.input);
 
         expect(tokens.length).to.equal(1);
         expect(tokens[0].type).to.equal(TokenType.string);
         expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(test.input.length);
+        expect(tokens[0].length).to.equal(tc.input.length);
       });
     });
   });
 
-  describe("Number", () => {
+  suite("Number", () => {
     [
       { name: "basic case", input: "0" },
       { name: "basic case with negative sign", input: "-123" },
@@ -284,16 +284,16 @@ message Outer {
         name: "octal digits with leading 0 and positive sign",
         input: "+001234",
       },
-    ].forEach((test) => {
-      it(`should tokenize an integer: ${test.name}`, () => {
+    ].forEach((tc) => {
+      test(`should tokenize an integer: ${tc.name}`, () => {
         const tokenizer = new Proto3Tokenizer();
-        const tokens = tokenizer.tokenize(test.input);
+        const tokens = tokenizer.tokenize(tc.input);
 
         expect(tokens.length).to.equal(1);
         expect(tokens[0].type).to.equal(TokenType.integer);
         expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(test.input.length);
-        expect((tokens[0] as IntegerToken).text).to.equal(test.input);
+        expect(tokens[0].length).to.equal(tc.input.length);
+        expect((tokens[0] as IntegerToken).text).to.equal(tc.input);
       });
     });
 
@@ -304,36 +304,36 @@ message Outer {
       { name: "floating point without leading 0", input: ".456" },
       { name: "floating point with exponent", input: "123.456e-7" },
       { name: "floating point with exponent 2", input: "123.456E+7" },
-    ].forEach((test) => {
-      it(`should tokenize a floating point number: ${test.name}`, () => {
+    ].forEach((tc) => {
+      test(`should tokenize a floating point number: ${tc.name}`, () => {
         const tokenizer = new Proto3Tokenizer();
-        const tokens = tokenizer.tokenize(test.input);
+        const tokens = tokenizer.tokenize(tc.input);
 
         expect(tokens.length).to.equal(1);
         expect(tokens[0].type).to.equal(TokenType.float);
         expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(test.input.length);
-        expect((tokens[0] as FloatToken).text).to.equal(test.input);
+        expect(tokens[0].length).to.equal(tc.input.length);
+        expect((tokens[0] as FloatToken).text).to.equal(tc.input);
       });
     });
   });
 
-  describe("Invalid", () => {
-    [{ name: "single slash", input: "/" }].forEach((test) => {
-      it(`should tokenize an invalid character: ${test.name}`, () => {
+  suite("Invalid", () => {
+    [{ name: "single slash", input: "/" }].forEach((tc) => {
+      test(`should tokenize an invalid character: ${tc.name}`, () => {
         const tokenizer = new Proto3Tokenizer();
-        const tokens = tokenizer.tokenize(test.input);
+        const tokens = tokenizer.tokenize(tc.input);
 
         expect(tokens.length).to.equal(1);
         expect(tokens[0].type).to.equal(TokenType.invalid);
         expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(test.input.length);
+        expect(tokens[0].length).to.equal(tc.input.length);
       });
     });
   });
 
-  describe("regression tests", () => {
-    it("inf token", () => {
+  suite("regression tests", () => {
+    test("inf token", () => {
       const input = `
       // A Keyword criterion segment.
       message Keyword {

@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 
 import { doProto3Diagnostic } from "../../../langaugefeatures/proto3/diagnostic";
 import { isCommandAvailable } from "../../../utils";
-import { rootPath } from "../util";
+import { rootPath } from "../../util";
 
 suite("Proto3 Diagnostics", () => {
   vscode.window.showInformationMessage("Start proto3Diagnostics tests.");

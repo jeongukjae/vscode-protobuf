@@ -1,15 +1,15 @@
 import { expect } from "chai";
 
-import { TextProtoTokenizer } from "../../../../parser/textproto/tokenizer";
+import { TextProtoTokenizer } from "../../../parser/textproto/tokenizer";
 import {
   FloatToken,
   IntegerToken,
   Token,
   TokenType,
-} from "../../../../parser/textproto/tokens";
+} from "../../../parser/textproto/tokens";
 
-describe("TextProtoTokenizer", () => {
-  it("should tokenize", () => {
+suite("TextProtoTokenizer", () => {
+  test("should tokenize", () => {
     const input = `
     # This is an example of Protocol Buffer's text format.
     # Unlike .proto files, only shell-style line comments are supported.
@@ -112,7 +112,7 @@ describe("TextProtoTokenizer", () => {
     expect(tokens.length).to.equal(expectedTokens.length);
   });
 
-  it("should tokenize a single line comment", () => {
+  test("should tokenize a single line comment", () => {
     const input = "# this is a single line comment";
     const tokenizer = new TextProtoTokenizer();
     const tokens = tokenizer.tokenize(input);
@@ -123,7 +123,7 @@ describe("TextProtoTokenizer", () => {
     expect(tokens[0].length).to.equal(input.length);
   });
 
-  describe("String", () => {
+  suite("String", () => {
     [
       { name: "double quote", input: '"this is a string"' },
       { name: "single quote", input: "'this is a string'" },
@@ -132,20 +132,20 @@ describe("TextProtoTokenizer", () => {
       { name: "char escape", input: "'this is a \\n string'" },
       { name: "quote scape", input: "'this is a \\' string'" },
       { name: "backslash escape", input: "'this is a \\\\ string'" },
-    ].forEach((test) => {
-      it(`should tokenize a string: ${test.name}`, () => {
+    ].forEach((tc) => {
+      test(`should tokenize a string: ${tc.name}`, () => {
         const tokenizer = new TextProtoTokenizer();
-        const tokens = tokenizer.tokenize(test.input);
+        const tokens = tokenizer.tokenize(tc.input);
 
         expect(tokens.length).to.equal(1);
         expect(tokens[0].type).to.equal(TokenType.string);
         expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(test.input.length);
+        expect(tokens[0].length).to.equal(tc.input.length);
       });
     });
   });
 
-  describe("Number", () => {
+  suite("Number", () => {
     [
       { name: "basic case", input: "0" },
       { name: "basic case with negative sign", input: "-123" },
@@ -170,16 +170,16 @@ describe("TextProtoTokenizer", () => {
         name: "octal digits with leading 0 and positive sign",
         input: "+001234",
       },
-    ].forEach((test) => {
-      it(`should tokenize an integer: ${test.name}`, () => {
+    ].forEach((tc) => {
+      test(`should tokenize an integer: ${tc.name}`, () => {
         const tokenizer = new TextProtoTokenizer();
-        const tokens = tokenizer.tokenize(test.input);
+        const tokens = tokenizer.tokenize(tc.input);
 
         expect(tokens.length).to.equal(1);
         expect(tokens[0].type).to.equal(TokenType.integer);
         expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(test.input.length);
-        expect((tokens[0] as IntegerToken).text).to.equal(test.input);
+        expect(tokens[0].length).to.equal(tc.input.length);
+        expect((tokens[0] as IntegerToken).text).to.equal(tc.input);
       });
     });
 
@@ -192,22 +192,22 @@ describe("TextProtoTokenizer", () => {
       { name: "floating point without leading 0", input: ".456" },
       { name: "floating point with exponent", input: "123.456e-7" },
       { name: "floating point with exponent 2", input: "123.456E+7" },
-    ].forEach((test) => {
-      it(`should tokenize a floating point number: ${test.name}`, () => {
+    ].forEach((tc) => {
+      test(`should tokenize a floating point number: ${tc.name}`, () => {
         const tokenizer = new TextProtoTokenizer();
-        const tokens = tokenizer.tokenize(test.input);
+        const tokens = tokenizer.tokenize(tc.input);
 
         expect(tokens.length).to.equal(1);
         expect(tokens[0].type).to.equal(TokenType.float);
         expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(test.input.length);
-        expect((tokens[0] as FloatToken).text).to.equal(test.input);
+        expect(tokens[0].length).to.equal(tc.input.length);
+        expect((tokens[0] as FloatToken).text).to.equal(tc.input);
       });
     });
   });
 
-  describe("Should fail", () => {
-    it("No space between literal and ident", () => {
+  suite("Should fail", () => {
+    test("No space between literal and ident", () => {
       const input = "foo: 10bar: 20";
       const tokenizer = new TextProtoTokenizer();
       expect(() => tokenizer.tokenize(input)).to.throw(
@@ -216,19 +216,19 @@ describe("TextProtoTokenizer", () => {
     });
   });
 
-  describe("Number tokenization error", () => {
+  suite("Number tokenization error", () => {
     [
       { input: `foo: [1,2,3]` },
       { input: `foo: [{foo: 213}]` },
       { input: `foo: 10[com.foo.ext]: 20` },
-    ].forEach((test) => {
-      it(`should throw an error for invalid number: ${test.input}`, () => {
+    ].forEach((tc) => {
+      test(`should throw an error for invalid number: ${tc.input}`, () => {
         const tokenizer = new TextProtoTokenizer();
-        tokenizer.tokenize(test.input); // without error
+        tokenizer.tokenize(tc.input); // without error
       });
     });
 
-    it("check token", () => {
+    test("check token", () => {
       let code = `foo: [1,2,3]`;
 
       const tokenizer = new TextProtoTokenizer();

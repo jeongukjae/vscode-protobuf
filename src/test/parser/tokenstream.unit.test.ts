@@ -1,6 +1,6 @@
 import { expect } from "chai";
 
-import { TokenStream } from "../../../parser/tokenstream";
+import { TokenStream } from "../../parser/tokenstream";
 
 class TestStreamUnit {
   start: number;
@@ -12,8 +12,8 @@ class TestStreamUnit {
   }
 }
 
-describe("TokenStream", () => {
-  it("should return the correct token text", () => {
+suite("TokenStream", () => {
+  test("should return the correct token text", () => {
     const st = new TokenStream("abc", [
       new TestStreamUnit(0, 1),
       new TestStreamUnit(1, 1),
@@ -25,7 +25,7 @@ describe("TokenStream", () => {
     expect(st.lookAheadText(2)).to.equal("c");
   });
 
-  it("should detect end of stream", () => {
+  test("should detect end of stream", () => {
     const st = new TokenStream("abc", [
       new TestStreamUnit(0, 1),
       new TestStreamUnit(1, 1),
