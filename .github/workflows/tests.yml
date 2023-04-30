@@ -32,4 +32,5 @@ jobs:
     - run: yarn install --frozen-lockfile
     - run: yarn lint
     - run: xvfb-run -a yarn coverage
-    - run: npx codecov
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
