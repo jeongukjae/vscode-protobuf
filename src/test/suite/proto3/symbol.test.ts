@@ -1,18 +1,15 @@
 import { expect } from "chai";
-import * as path from "path";
 import * as vscode from "vscode";
 
 import { proto3SymbolProvider } from "../../../langaugefeatures/proto3/symbol";
 import { rootPath } from "../util";
-
-const testFolder = path.resolve(rootPath, "testdata/proto3/symbol-provider");
 
 suite("Proto3 Symbol Provider", () => {
   vscode.window.showInformationMessage("Start proto3SymbolProvider tests.");
 
   test("Should provide message type", async () => {
     return vscode.workspace
-      .openTextDocument(`${testFolder}/sample1.proto`)
+      .openTextDocument(`${rootPath}/com/example/symbol/message.proto`)
       .then((doc) => {
         const symbols = proto3SymbolProvider.provideDocumentSymbols(
           doc,
@@ -27,7 +24,7 @@ suite("Proto3 Symbol Provider", () => {
 
   test("Should provide these symbols", async () => {
     return vscode.workspace
-      .openTextDocument(`${testFolder}/sample2.proto`)
+      .openTextDocument(`${rootPath}/com/example/symbol/sample.proto`)
       .then((doc) => {
         const symbols = proto3SymbolProvider.provideDocumentSymbols(
           doc,
@@ -37,7 +34,7 @@ suite("Proto3 Symbol Provider", () => {
         expect(symbols[0].name).to.equal("proto3");
         expect(symbols[0].kind).to.equal(vscode.SymbolKind.String);
 
-        expect(symbols[1].name).to.equal("foo.bar");
+        expect(symbols[1].name).to.equal("com.example.symbol");
         expect(symbols[1].kind).to.equal(vscode.SymbolKind.Package);
 
         expect(symbols[2].name).to.equal("java_package");

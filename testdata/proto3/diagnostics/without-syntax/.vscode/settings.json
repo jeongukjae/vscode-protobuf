@@ -1,4 +1,0 @@
-{
-    "protobuf3.compiler.provider": "protoc",
-    "protobuf3.protoc.executable": "sample-protoc-path"
-}
