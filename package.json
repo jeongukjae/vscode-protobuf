@@ -47,16 +47,6 @@
           "description": "The formatter to use for formatting Protocol Buffers 3 files.",
           "scope": "resource"
         },
-        "protobuf3.linter.provider": {
-          "type": "string",
-          "default": "api-linter",
-          "enum": [
-            "api-linter",
-            "buf"
-          ],
-          "description": "The linter to use for linting Protocol Buffers 3 files.",
-          "scope": "resource"
-        },
         "protobuf3.protoc.executable": {
           "type": "string",
           "default": "protoc",
@@ -69,6 +59,12 @@
           "description": "The arguments to pass to protoc.",
           "scope": "resource"
         },
+        "protobuf3.api-linter.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to enable api-linter.",
+          "scope": "resource"
+        },
         "protobuf3.api-linter.executable": {
           "type": "string",
           "default": "api-linter",
@@ -79,6 +75,12 @@
           "type": "array",
           "default": [],
           "description": "The arguments to pass to api-linter.",
+          "scope": "resource"
+        },
+        "protobuf3.buf.lint.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to enable buf lint.",
           "scope": "resource"
         },
         "protobuf3.buf.executable": {
@@ -180,7 +182,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "yarn run test:unit && yarn run test:extension",
     "pretest:extension": "yarn run compile",
-    "test:extension": "node ./out/test/runTest.js",
+    "test:extension": "node ./out/test/runTest.js --extensionDevelopmentPath ./test-workspace",
     "test:unit": "mocha \"src/test/unit/**/*.ts\" --require ts-node/register --watch-files src --timeout 10000"
   },
   "devDependencies": {
