@@ -181,6 +181,7 @@
     "lint": "eslint src --ext ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "pretest": "yarn run compile",
+    "coverage": "c8 yarn test",
     "test": "node ./out/test/runTest.js",
     "pretest:unit": "yarn run compile",
     "test:unit": "mocha \"src/test/**/*.unit.test.ts\" --require ts-node/register --watch-files src --timeout 10000 --ui tdd"
@@ -199,6 +200,7 @@
     "@vscode/test-electron": "^2.2.2",
     "@vscode/vsce": "^2.19.0",
     "adm-zip": "^0.5.10",
+    "c8": "^7.13.0",
     "chai": "^4.3.7",
     "eslint": "^8.33.0",
     "eslint-plugin-prettier": "^4.2.1",

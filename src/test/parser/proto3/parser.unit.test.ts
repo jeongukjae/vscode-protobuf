@@ -337,7 +337,7 @@ service ServiceName {
             }
           }
         });
-      });
+      }).timeout(10000);
     });
   });
 });
