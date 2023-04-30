@@ -14,7 +14,7 @@ import {
   PrimitiveType,
 } from "../../../parser/proto3/tokens";
 
-suite("Proto3Tokenizer", () => {
+suite("Parser >> Proto3 >> Tokenizer", () => {
   test("should tokenize", () => {
     const input = `
 syntax = "proto3";
@@ -174,167 +174,158 @@ message Outer {
     }
   );
 
-  suite("Comment", () => {
-    test("should tokenize a single line comment", () => {
-      const input = "// this is a single line comment";
+  test("should tokenize a single line comment", () => {
+    const input = "// this is a single line comment";
+    const tokenizer = new Proto3Tokenizer();
+    const tokens = tokenizer.tokenize(input);
+
+    expect(tokens.length).to.equal(1);
+    expect(tokens[0].type).to.equal(TokenType.comment);
+    expect(tokens[0].start).to.equal(0);
+    expect(tokens[0].length).to.equal(input.length);
+    expect((tokens[0] as Comment).isBlock).to.equal(false);
+  });
+
+  test("should tokenize a block line comment", () => {
+    const input = "/* this is a block line comment */";
+    const tokenizer = new Proto3Tokenizer();
+    const tokens = tokenizer.tokenize(input);
+
+    expect(tokens.length).to.equal(1);
+    expect(tokens[0].type).to.equal(TokenType.comment);
+    expect(tokens[0].start).to.equal(0);
+    expect(tokens[0].length).to.equal(input.length);
+    expect((tokens[0] as Comment).isBlock).to.equal(true);
+  });
+
+  test("should tokenize a single line comment with leading whitespace", () => {
+    const input = "    // this is a single line comment";
+    const tokenizer = new Proto3Tokenizer();
+    const tokens = tokenizer.tokenize(input);
+
+    expect(tokens.length).to.equal(1);
+    expect(tokens[0].type).to.equal(TokenType.comment);
+    expect(tokens[0].start).to.equal(4);
+    expect(tokens[0].length).to.equal(input.length - 4);
+    expect((tokens[0] as Comment).isBlock).to.equal(false);
+  });
+
+  test("should tokenize a block line comment with leading whitespace", () => {
+    const input = "    \n/* this is a block line comment */\n";
+    const tokenizer = new Proto3Tokenizer();
+    const tokens = tokenizer.tokenize(input);
+
+    expect(tokens.length).to.equal(1);
+    expect(tokens[0].type).to.equal(TokenType.comment);
+    expect(tokens[0].start).to.equal(5);
+    expect(tokens[0].length).to.equal(input.length - 6);
+    expect((tokens[0] as Comment).isBlock).to.equal(true);
+  });
+
+  test("should tokenize a multi line comment", () => {
+    const input =
+      "/* this is a block line comment\n* that spans multiple lines\n*/";
+    const tokenizer = new Proto3Tokenizer();
+    const tokens = tokenizer.tokenize(input);
+
+    expect(tokens.length).to.equal(1);
+    expect(tokens[0].type).to.equal(TokenType.comment);
+    expect(tokens[0].start).to.equal(0);
+    expect(tokens[0].length).to.equal(input.length);
+    expect((tokens[0] as Comment).isBlock).to.equal(true);
+  });
+
+  [
+    { name: "double quote", input: '"this is a string"' },
+    { name: "single quote", input: "'this is a string'" },
+    { name: "hex escape", input: "'this is a \\x0A string'" },
+    { name: "octal escape", input: "'this is a \\012 string'" },
+    { name: "char escape", input: "'this is a \\n string'" },
+    { name: "quote scape", input: "'this is a \\' string'" },
+    { name: "backslash escape", input: "'this is a \\\\ string'" },
+  ].forEach((tc) => {
+    test(`should tokenize a string: ${tc.name}`, () => {
       const tokenizer = new Proto3Tokenizer();
-      const tokens = tokenizer.tokenize(input);
+      const tokens = tokenizer.tokenize(tc.input);
 
       expect(tokens.length).to.equal(1);
-      expect(tokens[0].type).to.equal(TokenType.comment);
+      expect(tokens[0].type).to.equal(TokenType.string);
       expect(tokens[0].start).to.equal(0);
-      expect(tokens[0].length).to.equal(input.length);
-      expect((tokens[0] as Comment).isBlock).to.equal(false);
+      expect(tokens[0].length).to.equal(tc.input.length);
     });
+  });
 
-    test("should tokenize a block line comment", () => {
-      const input = "/* this is a block line comment */";
+  [
+    { name: "basic case", input: "0" },
+    { name: "basic case with negative sign", input: "-123" },
+    { name: "basic case with positive sign", input: "+123" },
+    { name: "hex digits", input: "0x1234" },
+    { name: "hex digits with leading 0", input: "0x01234" },
+    {
+      name: "hex digits with leading 0 and negative sign",
+      input: "-0x01234",
+    },
+    {
+      name: "hex digits with leading 0 and positive sign",
+      input: "+0x01234",
+    },
+    { name: "octal digits", input: "01234" },
+    { name: "octal digits with leading 0", input: "001234" },
+    {
+      name: "octal digits with leading 0 and negative sign",
+      input: "-001234",
+    },
+    {
+      name: "octal digits with leading 0 and positive sign",
+      input: "+001234",
+    },
+  ].forEach((tc) => {
+    test(`should tokenize an integer: ${tc.name}`, () => {
       const tokenizer = new Proto3Tokenizer();
-      const tokens = tokenizer.tokenize(input);
+      const tokens = tokenizer.tokenize(tc.input);
 
       expect(tokens.length).to.equal(1);
-      expect(tokens[0].type).to.equal(TokenType.comment);
+      expect(tokens[0].type).to.equal(TokenType.integer);
       expect(tokens[0].start).to.equal(0);
-      expect(tokens[0].length).to.equal(input.length);
-      expect((tokens[0] as Comment).isBlock).to.equal(true);
+      expect(tokens[0].length).to.equal(tc.input.length);
+      expect((tokens[0] as IntegerToken).text).to.equal(tc.input);
     });
+  });
 
-    test("should tokenize a single line comment with leading whitespace", () => {
-      const input = "    // this is a single line comment";
+  [
+    { name: "floating point", input: "123.456" },
+    { name: "floating point with negative sign", input: "-123.456" },
+    { name: "floating point with positive sign", input: "+123.456" },
+    { name: "floating point without leading 0", input: ".456" },
+    { name: "floating point with exponent", input: "123.456e-7" },
+    { name: "floating point with exponent 2", input: "123.456E+7" },
+  ].forEach((tc) => {
+    test(`should tokenize a floating point number: ${tc.name}`, () => {
       const tokenizer = new Proto3Tokenizer();
-      const tokens = tokenizer.tokenize(input);
+      const tokens = tokenizer.tokenize(tc.input);
 
       expect(tokens.length).to.equal(1);
-      expect(tokens[0].type).to.equal(TokenType.comment);
-      expect(tokens[0].start).to.equal(4);
-      expect(tokens[0].length).to.equal(input.length - 4);
-      expect((tokens[0] as Comment).isBlock).to.equal(false);
-    });
-
-    test("should tokenize a block line comment with leading whitespace", () => {
-      const input = "    \n/* this is a block line comment */\n";
-      const tokenizer = new Proto3Tokenizer();
-      const tokens = tokenizer.tokenize(input);
-
-      expect(tokens.length).to.equal(1);
-      expect(tokens[0].type).to.equal(TokenType.comment);
-      expect(tokens[0].start).to.equal(5);
-      expect(tokens[0].length).to.equal(input.length - 6);
-      expect((tokens[0] as Comment).isBlock).to.equal(true);
-    });
-
-    test("should tokenize a multi line comment", () => {
-      const input =
-        "/* this is a block line comment\n* that spans multiple lines\n*/";
-      const tokenizer = new Proto3Tokenizer();
-      const tokens = tokenizer.tokenize(input);
-
-      expect(tokens.length).to.equal(1);
-      expect(tokens[0].type).to.equal(TokenType.comment);
+      expect(tokens[0].type).to.equal(TokenType.float);
       expect(tokens[0].start).to.equal(0);
-      expect(tokens[0].length).to.equal(input.length);
-      expect((tokens[0] as Comment).isBlock).to.equal(true);
+      expect(tokens[0].length).to.equal(tc.input.length);
+      expect((tokens[0] as FloatToken).text).to.equal(tc.input);
     });
   });
 
-  suite("String", () => {
-    [
-      { name: "double quote", input: '"this is a string"' },
-      { name: "single quote", input: "'this is a string'" },
-      { name: "hex escape", input: "'this is a \\x0A string'" },
-      { name: "octal escape", input: "'this is a \\012 string'" },
-      { name: "char escape", input: "'this is a \\n string'" },
-      { name: "quote scape", input: "'this is a \\' string'" },
-      { name: "backslash escape", input: "'this is a \\\\ string'" },
-    ].forEach((tc) => {
-      test(`should tokenize a string: ${tc.name}`, () => {
-        const tokenizer = new Proto3Tokenizer();
-        const tokens = tokenizer.tokenize(tc.input);
+  [{ name: "single slash", input: "/" }].forEach((tc) => {
+    test(`should tokenize an invalid character: ${tc.name}`, () => {
+      const tokenizer = new Proto3Tokenizer();
+      const tokens = tokenizer.tokenize(tc.input);
 
-        expect(tokens.length).to.equal(1);
-        expect(tokens[0].type).to.equal(TokenType.string);
-        expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(tc.input.length);
-      });
+      expect(tokens.length).to.equal(1);
+      expect(tokens[0].type).to.equal(TokenType.invalid);
+      expect(tokens[0].start).to.equal(0);
+      expect(tokens[0].length).to.equal(tc.input.length);
     });
   });
 
-  suite("Number", () => {
-    [
-      { name: "basic case", input: "0" },
-      { name: "basic case with negative sign", input: "-123" },
-      { name: "basic case with positive sign", input: "+123" },
-      { name: "hex digits", input: "0x1234" },
-      { name: "hex digits with leading 0", input: "0x01234" },
-      {
-        name: "hex digits with leading 0 and negative sign",
-        input: "-0x01234",
-      },
-      {
-        name: "hex digits with leading 0 and positive sign",
-        input: "+0x01234",
-      },
-      { name: "octal digits", input: "01234" },
-      { name: "octal digits with leading 0", input: "001234" },
-      {
-        name: "octal digits with leading 0 and negative sign",
-        input: "-001234",
-      },
-      {
-        name: "octal digits with leading 0 and positive sign",
-        input: "+001234",
-      },
-    ].forEach((tc) => {
-      test(`should tokenize an integer: ${tc.name}`, () => {
-        const tokenizer = new Proto3Tokenizer();
-        const tokens = tokenizer.tokenize(tc.input);
-
-        expect(tokens.length).to.equal(1);
-        expect(tokens[0].type).to.equal(TokenType.integer);
-        expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(tc.input.length);
-        expect((tokens[0] as IntegerToken).text).to.equal(tc.input);
-      });
-    });
-
-    [
-      { name: "floating point", input: "123.456" },
-      { name: "floating point with negative sign", input: "-123.456" },
-      { name: "floating point with positive sign", input: "+123.456" },
-      { name: "floating point without leading 0", input: ".456" },
-      { name: "floating point with exponent", input: "123.456e-7" },
-      { name: "floating point with exponent 2", input: "123.456E+7" },
-    ].forEach((tc) => {
-      test(`should tokenize a floating point number: ${tc.name}`, () => {
-        const tokenizer = new Proto3Tokenizer();
-        const tokens = tokenizer.tokenize(tc.input);
-
-        expect(tokens.length).to.equal(1);
-        expect(tokens[0].type).to.equal(TokenType.float);
-        expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(tc.input.length);
-        expect((tokens[0] as FloatToken).text).to.equal(tc.input);
-      });
-    });
-  });
-
-  suite("Invalid", () => {
-    [{ name: "single slash", input: "/" }].forEach((tc) => {
-      test(`should tokenize an invalid character: ${tc.name}`, () => {
-        const tokenizer = new Proto3Tokenizer();
-        const tokens = tokenizer.tokenize(tc.input);
-
-        expect(tokens.length).to.equal(1);
-        expect(tokens[0].type).to.equal(TokenType.invalid);
-        expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(tc.input.length);
-      });
-    });
-  });
-
-  suite("regression tests", () => {
-    test("inf token", () => {
-      const input = `
+  test("should tokenize inf token", () => {
+    const input = `
       // A Keyword criterion segment.
       message Keyword {
         // The AdGroupCriterion resource name.
@@ -344,11 +335,10 @@ message Outer {
         KeywordInfo info = 2;
       }
       `;
-      const tokenizer = new Proto3Tokenizer();
-      const tokens = tokenizer.tokenize(input);
+    const tokenizer = new Proto3Tokenizer();
+    const tokens = tokenizer.tokenize(input);
 
-      expect(tokens.length).to.equal(18);
-      expect(tokens[13].type).to.equal(TokenType.identifier);
-    });
+    expect(tokens.length).to.equal(18);
+    expect(tokens[13].type).to.equal(TokenType.identifier);
   });
 });

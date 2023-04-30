@@ -4,10 +4,10 @@ import * as vscode from "vscode";
 import { proto3SymbolProvider } from "../../../langaugefeatures/proto3/symbol";
 import { rootPath } from "../../util";
 
-suite("Proto3 Symbol Provider", () => {
+suite("LanguageFeatrues >> Proto3 >> SymbolProvider", () => {
   vscode.window.showInformationMessage("Start proto3SymbolProvider tests.");
 
-  test("Should provide message type", async () => {
+  test("should provide message type", async () => {
     return vscode.workspace
       .openTextDocument(`${rootPath}/com/example/symbol/message.proto`)
       .then((doc) => {
@@ -22,7 +22,7 @@ suite("Proto3 Symbol Provider", () => {
       });
   });
 
-  test("Should provide these symbols", async () => {
+  test("should provide these symbols", async () => {
     return vscode.workspace
       .openTextDocument(`${rootPath}/com/example/symbol/sample.proto`)
       .then((doc) => {

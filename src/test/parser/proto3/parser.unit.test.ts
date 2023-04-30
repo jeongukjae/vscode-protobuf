@@ -20,7 +20,7 @@ import {
 } from "../../../parser/proto3/nodes";
 import { Proto3Parser } from "../../../parser/proto3/parser";
 
-suite("Proto3Parser", () => {
+suite("Parser >> Proto3 >> Parser", () => {
   [
     { input: "syntax;", expectedError: "Expected '=' after 'syntax'" },
     {
@@ -37,7 +37,7 @@ suite("Proto3Parser", () => {
       expectedError: "Expected file path or specific keyword after 'import'",
     },
   ].forEach((tc) => {
-    test(`parse error: \`${tc.input}\` -> ${tc.expectedError}`, () => {
+    test(`should raise error when parsing: \`${tc.input}\` -> ${tc.expectedError}`, () => {
       let parser = new Proto3Parser();
       expect(() => parser.parse(tc.input)).to.throw(tc.expectedError);
     });
@@ -131,14 +131,14 @@ suite("Proto3Parser", () => {
       // comment`,
     },
   ].forEach((tc) => {
-    test(`parse success without error: \`${tc.input}\``, () => {
+    test(`should parse without error: \`${tc.input}\``, () => {
       let parser = new Proto3Parser();
 
       parser.parse(tc.input);
     });
   });
 
-  test("parse success", () => {
+  test("should parse this example", () => {
     const input = `
 syntax = "proto3";
 
@@ -266,8 +266,8 @@ service ServiceName {
     expect(secondRpc.children).to.be.undefined;
   });
 
-  suite("Parsing all sample files", () => {
-    const basedir = path.join(__dirname, "../../../../sample");
+  suite("should parse files in test-workspace", () => {
+    const basedir = path.join(__dirname, "../../../../test-workspace");
     glob.sync("**/*.proto", { cwd: basedir }).forEach((file) => {
       test(`should parse file: ${file}`, () => {
         let parser = new Proto3Parser();

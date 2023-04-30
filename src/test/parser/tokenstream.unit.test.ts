@@ -12,7 +12,7 @@ class TestStreamUnit {
   }
 }
 
-suite("TokenStream", () => {
+suite("Parser >> TokenStream", () => {
   test("should return the correct token text", () => {
     const st = new TokenStream("abc", [
       new TestStreamUnit(0, 1),

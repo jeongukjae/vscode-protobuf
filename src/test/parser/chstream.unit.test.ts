@@ -2,7 +2,7 @@ import { expect } from "chai";
 
 import { CharacterStream } from "../../parser/chstream";
 
-suite("CharacterStream", () => {
+suite("Parser >> CharacterStream", () => {
   test("should be able to move forward", () => {
     let chstream = new CharacterStream("test");
     expect(chstream.moveNext()).to.be.true;

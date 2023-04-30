@@ -7,7 +7,7 @@ import {
 } from "../../../parser/textproto/nodes";
 import { TextProtoParser } from "../../../parser/textproto/parser";
 
-suite("TextProtoParser", () => {
+suite("Parser >> TextProto >> Parser", () => {
   [
     { input: "foo: bar" },
     { input: `foo: 12` },
@@ -107,7 +107,7 @@ suite("TextProtoParser", () => {
     });
   });
 
-  test("Check Output", () => {
+  test("should parse whole sample textproto", () => {
     let parser = new TextProtoParser();
     let document = parser.parse(`
     enum_field: BAR float_field: 1.23
@@ -171,7 +171,7 @@ suite("TextProtoParser", () => {
     expect(floatField2.end).equal(162);
   });
 
-  test("Check comment inside float literal", () => {
+  test("should parse a float literal containing comment", () => {
     let code = `value: -
     # comment
     2.0         # Valid: whitespace and comments between '-' and '2.0'.`;
@@ -196,7 +196,7 @@ suite("TextProtoParser", () => {
     expect(comment.end).equal(code.length);
   });
 
-  test("Check repeated field", () => {
+  test("should parse repeated field", () => {
     let code = `
       foo: [1,2,3]
     `;

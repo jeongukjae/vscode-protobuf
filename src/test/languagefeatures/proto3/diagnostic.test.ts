@@ -5,10 +5,10 @@ import { doProto3Diagnostic } from "../../../langaugefeatures/proto3/diagnostic"
 import { isCommandAvailable } from "../../../utils";
 import { rootPath } from "../../util";
 
-suite("Proto3 Diagnostics", () => {
+suite("LanguageFeatrues >> Proto3 >> Diagnostics", () => {
   vscode.window.showInformationMessage("Start proto3Diagnostics tests.");
 
-  test("Check empty syntax with api-linter", async () => {
+  test("should generate diagnostics with api-linter", async () => {
     if (!isCommandAvailable("api-linter")) {
       throw new Error(
         "api-linter is not available. " +
@@ -26,7 +26,21 @@ suite("Proto3 Diagnostics", () => {
         let collection = vscode.languages.createDiagnosticCollection();
         doProto3Diagnostic(doc, collection);
 
-        let diagnostics = collection.get(doc.uri);
+        let diagnostics_ = collection.get(doc.uri);
+
+        // copy to mutable array.
+        let diagnostics = diagnostics_?.slice();
+
+        // sort diagnostics by line and message to make it easy to test.
+        diagnostics?.sort((a, b) => {
+          if (a.range.start.line < b.range.start.line) {
+            return -1;
+          } else if (a.range.start.line > b.range.start.line) {
+            return 1;
+          } else {
+            return a.message.localeCompare(b.message);
+          }
+        });
 
         // should use proto3 syntax.
         expect(diagnostics?.[0].message).to.match(
@@ -40,7 +54,7 @@ suite("Proto3 Diagnostics", () => {
       });
   });
 
-  test("Check api-linter with invalid path", async () => {
+  test("should ignore diagnostics api-linter with invalid path", async () => {
     let settings = vscode.workspace.getConfiguration("protobuf3");
     await settings.update("api-linter.enabled", true);
     await settings.update("api-linter.executable", "./some/invalid/path");

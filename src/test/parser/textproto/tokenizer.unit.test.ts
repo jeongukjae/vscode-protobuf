@@ -8,7 +8,7 @@ import {
   TokenType,
 } from "../../../parser/textproto/tokens";
 
-suite("TextProtoTokenizer", () => {
+suite("Parser >> TextProto >> Tokenizer", () => {
   test("should tokenize", () => {
     const input = `
     # This is an example of Protocol Buffer's text format.
@@ -123,128 +123,120 @@ suite("TextProtoTokenizer", () => {
     expect(tokens[0].length).to.equal(input.length);
   });
 
-  suite("String", () => {
-    [
-      { name: "double quote", input: '"this is a string"' },
-      { name: "single quote", input: "'this is a string'" },
-      { name: "hex escape", input: "'this is a \\x0A string'" },
-      { name: "octal escape", input: "'this is a \\012 string'" },
-      { name: "char escape", input: "'this is a \\n string'" },
-      { name: "quote scape", input: "'this is a \\' string'" },
-      { name: "backslash escape", input: "'this is a \\\\ string'" },
-    ].forEach((tc) => {
-      test(`should tokenize a string: ${tc.name}`, () => {
-        const tokenizer = new TextProtoTokenizer();
-        const tokens = tokenizer.tokenize(tc.input);
-
-        expect(tokens.length).to.equal(1);
-        expect(tokens[0].type).to.equal(TokenType.string);
-        expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(tc.input.length);
-      });
-    });
-  });
-
-  suite("Number", () => {
-    [
-      { name: "basic case", input: "0" },
-      { name: "basic case with negative sign", input: "-123" },
-      { name: "basic case with positive sign", input: "+123" },
-      { name: "hex digits", input: "0x1234" },
-      { name: "hex digits with leading 0", input: "0x01234" },
-      {
-        name: "hex digits with leading 0 and negative sign",
-        input: "-0x01234",
-      },
-      {
-        name: "hex digits with leading 0 and positive sign",
-        input: "+0x01234",
-      },
-      { name: "octal digits", input: "01234" },
-      { name: "octal digits with leading 0", input: "001234" },
-      {
-        name: "octal digits with leading 0 and negative sign",
-        input: "-001234",
-      },
-      {
-        name: "octal digits with leading 0 and positive sign",
-        input: "+001234",
-      },
-    ].forEach((tc) => {
-      test(`should tokenize an integer: ${tc.name}`, () => {
-        const tokenizer = new TextProtoTokenizer();
-        const tokens = tokenizer.tokenize(tc.input);
-
-        expect(tokens.length).to.equal(1);
-        expect(tokens[0].type).to.equal(TokenType.integer);
-        expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(tc.input.length);
-        expect((tokens[0] as IntegerToken).text).to.equal(tc.input);
-      });
-    });
-
-    [
-      { name: "floating point", input: "123.456" },
-      { name: "floating point with f suffix 1", input: "123f" },
-      { name: "floating point with f suffix 2", input: "123.456f" },
-      { name: "floating point with negative sign", input: "-123.456" },
-      { name: "floating point with positive sign", input: "+123.456" },
-      { name: "floating point without leading 0", input: ".456" },
-      { name: "floating point with exponent", input: "123.456e-7" },
-      { name: "floating point with exponent 2", input: "123.456E+7" },
-    ].forEach((tc) => {
-      test(`should tokenize a floating point number: ${tc.name}`, () => {
-        const tokenizer = new TextProtoTokenizer();
-        const tokens = tokenizer.tokenize(tc.input);
-
-        expect(tokens.length).to.equal(1);
-        expect(tokens[0].type).to.equal(TokenType.float);
-        expect(tokens[0].start).to.equal(0);
-        expect(tokens[0].length).to.equal(tc.input.length);
-        expect((tokens[0] as FloatToken).text).to.equal(tc.input);
-      });
-    });
-  });
-
-  suite("Should fail", () => {
-    test("No space between literal and ident", () => {
-      const input = "foo: 10bar: 20";
+  [
+    { name: "double quote", input: '"this is a string"' },
+    { name: "single quote", input: "'this is a string'" },
+    { name: "hex escape", input: "'this is a \\x0A string'" },
+    { name: "octal escape", input: "'this is a \\012 string'" },
+    { name: "char escape", input: "'this is a \\n string'" },
+    { name: "quote scape", input: "'this is a \\' string'" },
+    { name: "backslash escape", input: "'this is a \\\\ string'" },
+  ].forEach((tc) => {
+    test(`should tokenize a string: ${tc.name}`, () => {
       const tokenizer = new TextProtoTokenizer();
-      expect(() => tokenizer.tokenize(input)).to.throw(
-        "Invalid number. whitespace expected"
-      );
+      const tokens = tokenizer.tokenize(tc.input);
+
+      expect(tokens.length).to.equal(1);
+      expect(tokens[0].type).to.equal(TokenType.string);
+      expect(tokens[0].start).to.equal(0);
+      expect(tokens[0].length).to.equal(tc.input.length);
     });
   });
 
-  suite("Number tokenization error", () => {
-    [
-      { input: `foo: [1,2,3]` },
-      { input: `foo: [{foo: 213}]` },
-      { input: `foo: 10[com.foo.ext]: 20` },
-    ].forEach((tc) => {
-      test(`should throw an error for invalid number: ${tc.input}`, () => {
-        const tokenizer = new TextProtoTokenizer();
-        tokenizer.tokenize(tc.input); // without error
-      });
-    });
-
-    test("check token", () => {
-      let code = `foo: [1,2,3]`;
-
+  [
+    { name: "basic case", input: "0" },
+    { name: "basic case with negative sign", input: "-123" },
+    { name: "basic case with positive sign", input: "+123" },
+    { name: "hex digits", input: "0x1234" },
+    { name: "hex digits with leading 0", input: "0x01234" },
+    {
+      name: "hex digits with leading 0 and negative sign",
+      input: "-0x01234",
+    },
+    {
+      name: "hex digits with leading 0 and positive sign",
+      input: "+0x01234",
+    },
+    { name: "octal digits", input: "01234" },
+    { name: "octal digits with leading 0", input: "001234" },
+    {
+      name: "octal digits with leading 0 and negative sign",
+      input: "-001234",
+    },
+    {
+      name: "octal digits with leading 0 and positive sign",
+      input: "+001234",
+    },
+  ].forEach((tc) => {
+    test(`should tokenize an integer: ${tc.name}`, () => {
       const tokenizer = new TextProtoTokenizer();
+      const tokens = tokenizer.tokenize(tc.input);
 
-      let tokens = tokenizer.tokenize(code);
-
-      expect(tokens.length).to.equal(9);
-      expect(tokens[0].type).to.equal(TokenType.identifier);
-      expect(tokens[1].type).to.equal(TokenType.colon);
-      expect(tokens[2].type).to.equal(TokenType.openBracket);
-      expect(tokens[3].type).to.equal(TokenType.integer);
-      expect(tokens[4].type).to.equal(TokenType.comma);
-      expect(tokens[5].type).to.equal(TokenType.integer);
-      expect(tokens[6].type).to.equal(TokenType.comma);
-      expect(tokens[7].type).to.equal(TokenType.integer);
-      expect(tokens[8].type).to.equal(TokenType.closeBracket);
+      expect(tokens.length).to.equal(1);
+      expect(tokens[0].type).to.equal(TokenType.integer);
+      expect(tokens[0].start).to.equal(0);
+      expect(tokens[0].length).to.equal(tc.input.length);
+      expect((tokens[0] as IntegerToken).text).to.equal(tc.input);
     });
+  });
+
+  [
+    { name: "floating point", input: "123.456" },
+    { name: "floating point with f suffix 1", input: "123f" },
+    { name: "floating point with f suffix 2", input: "123.456f" },
+    { name: "floating point with negative sign", input: "-123.456" },
+    { name: "floating point with positive sign", input: "+123.456" },
+    { name: "floating point without leading 0", input: ".456" },
+    { name: "floating point with exponent", input: "123.456e-7" },
+    { name: "floating point with exponent 2", input: "123.456E+7" },
+  ].forEach((tc) => {
+    test(`should tokenize a floating point number: ${tc.name}`, () => {
+      const tokenizer = new TextProtoTokenizer();
+      const tokens = tokenizer.tokenize(tc.input);
+
+      expect(tokens.length).to.equal(1);
+      expect(tokens[0].type).to.equal(TokenType.float);
+      expect(tokens[0].start).to.equal(0);
+      expect(tokens[0].length).to.equal(tc.input.length);
+      expect((tokens[0] as FloatToken).text).to.equal(tc.input);
+    });
+  });
+
+  test("should raise error when no space between literal and ident", () => {
+    const input = "foo: 10bar: 20";
+    const tokenizer = new TextProtoTokenizer();
+    expect(() => tokenizer.tokenize(input)).to.throw(
+      "Invalid number. whitespace expected"
+    );
+  });
+
+  [
+    { input: `foo: [1,2,3]` },
+    { input: `foo: [{foo: 213}]` },
+    { input: `foo: 10[com.foo.ext]: 20` },
+  ].forEach((tc) => {
+    test(`should throw an error for invalid number: ${tc.input}`, () => {
+      const tokenizer = new TextProtoTokenizer();
+      tokenizer.tokenize(tc.input); // without error
+    });
+  });
+
+  test("should tokenize repeated literal", () => {
+    let code = `foo: [1,2,3]`;
+
+    const tokenizer = new TextProtoTokenizer();
+
+    let tokens = tokenizer.tokenize(code);
+
+    expect(tokens.length).to.equal(9);
+    expect(tokens[0].type).to.equal(TokenType.identifier);
+    expect(tokens[1].type).to.equal(TokenType.colon);
+    expect(tokens[2].type).to.equal(TokenType.openBracket);
+    expect(tokens[3].type).to.equal(TokenType.integer);
+    expect(tokens[4].type).to.equal(TokenType.comma);
+    expect(tokens[5].type).to.equal(TokenType.integer);
+    expect(tokens[6].type).to.equal(TokenType.comma);
+    expect(tokens[7].type).to.equal(TokenType.integer);
+    expect(tokens[8].type).to.equal(TokenType.closeBracket);
   });
 });
