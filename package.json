@@ -182,7 +182,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "yarn run test:unit && yarn run test:extension",
     "pretest:extension": "yarn run compile",
-    "test:extension": "node ./out/test/runTest.js --extensionDevelopmentPath ./test-workspace",
+    "test:extension": "node ./out/test/runTest.js",
     "test:unit": "mocha \"src/test/unit/**/*.ts\" --require ts-node/register --watch-files src --timeout 10000"
   },
   "devDependencies": {
