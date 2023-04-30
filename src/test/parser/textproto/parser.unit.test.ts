@@ -9,6 +9,7 @@ import { TextProtoParser } from "../../../parser/textproto/parser";
 
 suite("Parser >> TextProto >> Parser", () => {
   [
+    { input: "# comment" },
     { input: "foo: bar" },
     { input: `foo: 12` },
     { input: "foo: '123'" },
@@ -214,5 +215,42 @@ suite("Parser >> TextProto >> Parser", () => {
     expect(foo.name).equal("foo");
     expect(foo.start).equal(7);
     expect(foo.end).equal(19);
+  });
+
+  test("should parse starting comment", () => {
+    let code = `# comment`;
+
+    let parser = new TextProtoParser();
+
+    let document = parser.parse(code);
+
+    expect(document.type).equal(NodeType.document);
+    expect(document.start).equal(0);
+    expect(document.end).equal(code.length);
+    expect(document.children).lengthOf(1);
+
+    let comment = document.children![0] as CommentNode;
+    expect(comment.type).equal(NodeType.comment);
+    expect(comment.start).equal(0);
+    expect(comment.end).equal(code.length);
+  });
+
+  test("should parse successive comments", () => {
+    let code = `# comment
+    # comment 2`;
+
+    let parser = new TextProtoParser();
+
+    let document = parser.parse(code);
+
+    expect(document.type).equal(NodeType.document);
+    expect(document.start).equal(0);
+    expect(document.end).equal(code.length);
+    expect(document.children).lengthOf(1);
+
+    let comment = document.children![0] as CommentNode;
+    expect(comment.type).equal(NodeType.comment);
+    expect(comment.start).equal(0);
+    expect(comment.end).equal(code.length);
   });
 });

@@ -340,4 +340,31 @@ service ServiceName {
       }).timeout(10000);
     });
   });
+
+  test("should parse starting comments", () => {
+    let code = `
+    // comment`;
+
+    let parser = new Proto3Parser();
+    let result = parser.parse(code);
+
+    expect(result.children).to.have.lengthOf(1);
+    expect(result.children![0].type).to.equal(NodeType.comment);
+    expect(result.children![0].start).to.equal(5);
+    expect(result.children![0].end).to.equal(code.length);
+  });
+
+  test("should parse successive starting comments", () => {
+    let code = `
+    // comment1
+    // comment2`;
+
+    let parser = new Proto3Parser();
+    let result = parser.parse(code);
+
+    expect(result.children).to.have.lengthOf(1);
+    expect(result.children![0].type).to.equal(NodeType.comment);
+    expect(result.children![0].start).to.equal(5);
+    expect(result.children![0].end).to.equal(code.length);
+  });
 });
