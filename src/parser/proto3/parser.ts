@@ -18,6 +18,7 @@ import {
   ServiceNode,
   RPCNode,
   ReservedNode,
+  NodeType,
 } from "./nodes";
 import { Proto3Tokenizer } from "./tokenizer";
 import {
@@ -37,18 +38,38 @@ export interface ParserContext {
 const getCurrent = (ctx: ParserContext): Node =>
   ctx.current[ctx.current.length - 1];
 
+const getLastChildren = (node: Node): Node | undefined => {
+  if (node.children !== undefined && node.children.length > 0) {
+    return node.children[node.children.length - 1];
+  }
+  return undefined;
+};
+
 // move next token and if it is a comment, add it to the current node, and
 // continue to move next until it is not a comment.
 const moveNext = (ctx: ParserContext) => {
   ctx.tokenStream.moveNext();
   if (ctx.tokenStream.getCurrentToken().type === TokenType.comment) {
-    let comment = new CommentNode(
-      ctx.tokenStream.getCurrentToken().start,
-      ctx.tokenStream.getCurrentToken().start +
-        ctx.tokenStream.getCurrentToken().length
-    );
-    comment.setParent(getCurrent(ctx));
-    getCurrent(ctx).add(comment);
+    let comment: CommentNode;
+
+    // if the last children is a comment, then we can just extend it.
+    if (
+      getCurrent(ctx).children !== undefined &&
+      getLastChildren(getCurrent(ctx))!.type === NodeType.comment
+    ) {
+      comment = getLastChildren(getCurrent(ctx)) as CommentNode;
+      comment.end =
+        ctx.tokenStream.getCurrentToken().start +
+        ctx.tokenStream.getCurrentToken().length;
+    } else {
+      comment = new CommentNode(
+        ctx.tokenStream.getCurrentToken().start,
+        ctx.tokenStream.getCurrentToken().start +
+          ctx.tokenStream.getCurrentToken().length
+      );
+      comment.setParent(getCurrent(ctx));
+      getCurrent(ctx).add(comment);
+    }
     if (ctx.tokenStream.isEndOfStream()) {
       return;
     }
@@ -99,6 +120,16 @@ export class Proto3Parser {
     switch (ctx.tokenStream.getCurrentToken().type) {
       case TokenType.keyword: {
         this._handleKeyword(ctx);
+        return;
+      }
+      case TokenType.comment: {
+        let comment = new CommentNode(
+          ctx.tokenStream.getCurrentToken().start,
+          ctx.tokenStream.getCurrentToken().start +
+            ctx.tokenStream.getCurrentToken().length
+        );
+        comment.setParent(getCurrent(ctx));
+        getCurrent(ctx).add(comment);
         return;
       }
     }

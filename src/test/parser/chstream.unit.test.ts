@@ -6,6 +6,8 @@ suite("Parser >> CharacterStream", () => {
   test("should be able to move forward", () => {
     let chstream = new CharacterStream("test");
     expect(chstream.moveNext()).to.be.true;
+    expect(chstream.position).to.equal(1);
+    expect(chstream.length).to.equal(4);
   });
 
   test("should be able to skip whitespace", () => {
