@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package pkg1;
-
-message Msg1 {
-
-}

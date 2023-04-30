@@ -39,19 +39,19 @@ const doCompilerDiagnostic = (
 const doLinterDiagnostic = (
   document: vscode.TextDocument
 ): vscode.Diagnostic[] => {
-  const protoLinterOption =
-    vscode.workspace.getConfiguration("protobuf3.linter");
-  const protoLinter = protoLinterOption.get("provider");
-
   const protoCompilerOption =
     vscode.workspace.getConfiguration("protobuf3.compiler");
   const protoCompiler = protoCompilerOption.get("provider");
 
-  if (protoLinter === "api-linter") {
+  const apiLinterOption = vscode.workspace.getConfiguration(
+    "protobuf3.api-linter"
+  );
+  if (apiLinterOption.get("enabled", false)) {
     return lintWithApiLinter(document);
   }
 
-  if (protoLinter === "buf") {
+  const bufOption = vscode.workspace.getConfiguration("protobuf3.buf");
+  if (bufOption.get("lint.enabled", false)) {
     if (protoCompiler !== "buf") {
       // buf linter is already run in the compiler step.
       return lintWithBuf(document);
@@ -59,7 +59,6 @@ const doLinterDiagnostic = (
     return [];
   }
 
-  vscode.window.showErrorMessage(`Unknown proto linter: ${protoLinter}`);
   return [];
 };
 

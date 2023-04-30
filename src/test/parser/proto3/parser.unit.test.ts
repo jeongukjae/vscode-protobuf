@@ -17,10 +17,10 @@ import {
   RPCNode,
   ServiceNode,
   SyntaxNode,
-} from "../../../../parser/proto3/nodes";
-import { Proto3Parser } from "../../../../parser/proto3/parser";
+} from "../../../parser/proto3/nodes";
+import { Proto3Parser } from "../../../parser/proto3/parser";
 
-describe("Proto3Parser", () => {
+suite("Parser >> Proto3 >> Parser", () => {
   [
     { input: "syntax;", expectedError: "Expected '=' after 'syntax'" },
     {
@@ -36,10 +36,10 @@ describe("Proto3Parser", () => {
       input: "import a.proto",
       expectedError: "Expected file path or specific keyword after 'import'",
     },
-  ].forEach((test) => {
-    it(`parse error: \`${test.input}\` -> ${test.expectedError}`, () => {
+  ].forEach((tc) => {
+    test(`should raise error when parsing: \`${tc.input}\` -> ${tc.expectedError}`, () => {
       let parser = new Proto3Parser();
-      expect(() => parser.parse(test.input)).to.throw(test.expectedError);
+      expect(() => parser.parse(tc.input)).to.throw(tc.expectedError);
     });
   });
 
@@ -130,15 +130,15 @@ describe("Proto3Parser", () => {
       }
       // comment`,
     },
-  ].forEach((test) => {
-    it(`parse success without error: \`${test.input}\``, () => {
+  ].forEach((tc) => {
+    test(`should parse without error: \`${tc.input}\``, () => {
       let parser = new Proto3Parser();
 
-      parser.parse(test.input);
+      parser.parse(tc.input);
     });
   });
 
-  it("parse success", () => {
+  test("should parse this example", () => {
     const input = `
 syntax = "proto3";
 
@@ -266,10 +266,10 @@ service ServiceName {
     expect(secondRpc.children).to.be.undefined;
   });
 
-  describe("Parsing all sample files", () => {
-    const basedir = path.join(__dirname, "../../../../sample");
+  suite("should parse files in test-workspace", () => {
+    const basedir = path.join(__dirname, "../../../../test-workspace");
     glob.sync("**/*.proto", { cwd: basedir }).forEach((file) => {
-      it(`should parse file: ${file}`, () => {
+      test(`should parse file: ${file}`, () => {
         let parser = new Proto3Parser();
         const filepath = path.join(basedir, file);
         const content = fs.readFileSync(filepath, "utf8");
@@ -279,7 +279,7 @@ service ServiceName {
     });
   });
 
-  describe("Parsing sample repository without errors", () => {
+  suite("Parsing sample repository without errors", () => {
     // download sample repository in temp directory
     const basedir = path.join(os.tmpdir(), "proto3-parser");
     const repositories = [
@@ -289,7 +289,7 @@ service ServiceName {
       },
     ];
 
-    before(() => {
+    setup(() => {
       return Promise.all(
         repositories.map((repo) => {
           const url = `https://github.com/${repo.owner}/${repo.repo}/archive/HEAD.zip`;
@@ -319,7 +319,7 @@ service ServiceName {
     });
 
     repositories.forEach((repo) => {
-      it(`should parse ${repo.owner}/${repo.repo}`, () => {
+      test(`should parse ${repo.owner}/${repo.repo}`, () => {
         // open zipfile
         const zipPath = path.join(basedir, repo.owner, `${repo.repo}.zip`);
 

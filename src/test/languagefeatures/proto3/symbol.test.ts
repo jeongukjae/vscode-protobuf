@@ -2,13 +2,14 @@ import { expect } from "chai";
 import * as vscode from "vscode";
 
 import { proto3SymbolProvider } from "../../../langaugefeatures/proto3/symbol";
+import { rootPath } from "../../util";
 
-suite("Proto3 Symbol Provider", () => {
+suite("LanguageFeatrues >> Proto3 >> SymbolProvider", () => {
   vscode.window.showInformationMessage("Start proto3SymbolProvider tests.");
 
-  test("Should provide message type", async () => {
+  test("should provide message type", async () => {
     return vscode.workspace
-      .openTextDocument({ language: "proto3", content: "message Foo { }" })
+      .openTextDocument(`${rootPath}/com/example/symbol/message.proto`)
       .then((doc) => {
         const symbols = proto3SymbolProvider.provideDocumentSymbols(
           doc,
@@ -21,34 +22,9 @@ suite("Proto3 Symbol Provider", () => {
       });
   });
 
-  test("Should provide these symbols", async () => {
+  test("should provide these symbols", async () => {
     return vscode.workspace
-      .openTextDocument({
-        language: "proto3",
-        content: `
-        syntax = "proto3";
-
-        package foo.bar;
-
-        option java_package = "com.example.foo.bar";
-
-        message Foo {
-          float a = 1; ; ; ;
-          oneof b {
-            int32 c = 2;
-            int64 d = 3;
-          }
-        }
-
-        enum Bar {
-          BAZ = 0;
-        }
-
-        service Baz {
-          rpc Foo (Foo) returns (Foo);
-        }
-        `,
-      })
+      .openTextDocument(`${rootPath}/com/example/symbol/sample.proto`)
       .then((doc) => {
         const symbols = proto3SymbolProvider.provideDocumentSymbols(
           doc,
@@ -58,13 +34,13 @@ suite("Proto3 Symbol Provider", () => {
         expect(symbols[0].name).to.equal("proto3");
         expect(symbols[0].kind).to.equal(vscode.SymbolKind.String);
 
-        expect(symbols[1].name).to.equal("foo.bar");
+        expect(symbols[1].name).to.equal("com.example.symbol");
         expect(symbols[1].kind).to.equal(vscode.SymbolKind.Package);
 
         expect(symbols[2].name).to.equal("java_package");
         expect(symbols[2].kind).to.equal(vscode.SymbolKind.Variable);
 
-        expect(symbols[3].name).to.equal("Foo");
+        expect(symbols[3].name).to.equal("FooMsg");
         expect(symbols[3].kind).to.equal(vscode.SymbolKind.Class);
 
         expect(symbols[4].name).to.equal("a");
@@ -94,6 +70,4 @@ suite("Proto3 Symbol Provider", () => {
         expect(symbols.length).to.equal(12);
       });
   });
-
-  // Add more tests here...
 });
