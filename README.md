@@ -1,15 +1,15 @@
 # vscode-protobuf
 
-vscode-protobuf provides additional features for editing Protocol Buffers and its text format.
+vscode-protobuf provides additional features for editing Protocol Buffers and its Text Format.
 
 [![codecov](https://codecov.io/gh/jeongukjae/vscode-protobuf/branch/main/graph/badge.svg?token=cfa725IQ9j)](https://codecov.io/gh/jeongukjae/vscode-protobuf)
 
 ## Features
 
-* Syntax highlighting for Protocol Buffers and its text format.
+* Syntax highlighting for Protocol Buffers and Text Format.
 * Diagnostic messages (compile & lint) for Protocol Buffers. (`protoc`, `buf`, `api-linter`)
-* Code formatting for Protocol Buffers and its text format. (`clang-format` & `buf` for Protocol Buffers, `txtpbfmt` for text format)
-* Symbol provider for Protocol Buffers.
+* Code formatting for Protocol Buffers and Text Format. (`clang-format` & `buf` for Protocol Buffers, `txtpbfmt` for Text Format)
+* Symbol provider for Protocol Buffers and Text Format.
 * Go to definition for Protocol Buffers.
 
 <!-- Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
