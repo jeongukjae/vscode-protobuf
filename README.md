@@ -2,6 +2,8 @@
 
 vscode-protobuf provides additional features for editing Protocol Buffers and its text format.
 
+[![codecov](https://codecov.io/gh/jeongukjae/vscode-protobuf/branch/main/graph/badge.svg?token=cfa725IQ9j)](https://codecov.io/gh/jeongukjae/vscode-protobuf)
+
 ## Features
 
 * Syntax highlighting for Protocol Buffers and its text format.
