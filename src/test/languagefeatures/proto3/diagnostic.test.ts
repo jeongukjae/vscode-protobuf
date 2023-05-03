@@ -8,6 +8,10 @@ import { rootPath } from "../../util";
 suite("LanguageFeatrues >> Proto3 >> Diagnostics", () => {
   vscode.window.showInformationMessage("Start proto3Diagnostics tests.");
 
+  test("should generate diagnostics with protoc");
+
+  test("should generate diagnostics with buf");
+
   test("should generate diagnostics with api-linter", async () => {
     if (!isCommandAvailable("api-linter")) {
       throw new Error(
