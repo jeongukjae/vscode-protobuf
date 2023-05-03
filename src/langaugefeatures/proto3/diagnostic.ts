@@ -13,9 +13,8 @@ export const doProto3Diagnostic = (
   diag: vscode.DiagnosticCollection
 ) => {
   let diagnostics = doCompilerDiagnostic(document);
-  diagnostics = diagnostics.concat(doLinterDiagnostic(document));
-
-  diag.set(document.uri, diagnostics);
+  let result = diagnostics.concat(doLinterDiagnostic(document));
+  diag.set(document.uri, result);
 };
 
 const doCompilerDiagnostic = (
@@ -23,7 +22,7 @@ const doCompilerDiagnostic = (
 ): vscode.Diagnostic[] => {
   const protoCompilerOption =
     vscode.workspace.getConfiguration("protobuf3.compiler");
-  const protoCompiler = protoCompilerOption.get("provider");
+  const protoCompiler = protoCompilerOption.get("provider", "protoc");
 
   if (protoCompiler === "protoc") {
     return compileTempWithProtoc(document);
@@ -46,20 +45,21 @@ const doLinterDiagnostic = (
   const apiLinterOption = vscode.workspace.getConfiguration(
     "protobuf3.api-linter"
   );
+  let result: vscode.Diagnostic[] = [];
   if (apiLinterOption.get("enabled", false)) {
-    return lintWithApiLinter(document);
+    result = lintWithApiLinter(document);
   }
 
   const bufOption = vscode.workspace.getConfiguration("protobuf3.buf");
   if (bufOption.get("lint.enabled", false)) {
     if (protoCompiler !== "buf") {
       // buf linter is already run in the compiler step.
-      return lintWithBuf(document);
+      result = result.concat(lintWithBuf(document));
     }
-    return [];
+    return result;
   }
 
-  return [];
+  return result;
 };
 
 function compileTempWithProtoc(
