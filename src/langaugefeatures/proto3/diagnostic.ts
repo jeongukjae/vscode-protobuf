@@ -149,7 +149,7 @@ function protocErrorToDiagnostic(
   }
   let range = new vscode.Range(startLine, startChar, startLine, endChar);
   let msg = `protoc: ${errorInfo[3]}`;
-  return new vscode.Diagnostic(range, msg, vscode.DiagnosticSeverity.Error);
+  return new vscode.Diagnostic(range, msg, vscode.DiagnosticSeverity.Warning);
 }
 
 function lintWithBuf(document: vscode.TextDocument): vscode.Diagnostic[] {
@@ -232,7 +232,7 @@ function bufErrorToDiagnostic(
   return new vscode.Diagnostic(
     range,
     `buf: ${err.message}`,
-    vscode.DiagnosticSeverity.Error
+    vscode.DiagnosticSeverity.Warning
   );
 }
 
@@ -287,7 +287,11 @@ function lintWithApiLinter(document: vscode.TextDocument): vscode.Diagnostic[] {
         );
 
         let messsage = `api-linter: ${problem.message}`;
-        return new vscode.Diagnostic(range, messsage);
+        return new vscode.Diagnostic(
+          range,
+          messsage,
+          vscode.DiagnosticSeverity.Warning
+        );
       });
   } catch (e) {
     // If the output is not JSON, it should be a parse error.

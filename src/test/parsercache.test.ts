@@ -8,7 +8,7 @@ import { parseProto3, parseTextProto } from "../parsercache";
 suite("utils", () => {
   test("should parse proto3 and return different result when doc is updated", async () => {
     let doc = await vscode.workspace.openTextDocument({
-      language: "proto3",
+      language: "protobuf3",
       content: 'syntax = "proto3";',
     });
 
