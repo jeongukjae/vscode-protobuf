@@ -6,6 +6,7 @@ import { proto3FormatProvider } from "./langaugefeatures/proto3/format";
 import { proto3SymbolProvider } from "./langaugefeatures/proto3/symbol";
 import { textprotoFormatProvider } from "./langaugefeatures/textproto/format";
 import { textprotoSymbolProvider } from "./langaugefeatures/textproto/symbol";
+import { proto3Index } from "./proto3Index";
 
 const PROTO3_ID = "protobuf3";
 const TEXT_PROTO_ID = "textproto";
@@ -14,6 +15,8 @@ export function activate(context: vscode.ExtensionContext) {
   // proto3
   const diagnostics =
     vscode.languages.createDiagnosticCollection("protobuf-errors");
+
+  proto3Index.initialize();
 
   vscode.languages.registerDocumentFormattingEditProvider(
     PROTO3_ID,
@@ -37,6 +40,12 @@ export function activate(context: vscode.ExtensionContext) {
       doProto3Diagnostic(document, diagnostics);
     }
   });
+
+  vscode.workspace
+    .createFileSystemWatcher("**/*.proto")
+    .onDidChange((e: vscode.Uri) => {
+      proto3Index.updateFile(e);
+    });
 
   // textproto
   vscode.languages.registerDocumentFormattingEditProvider(

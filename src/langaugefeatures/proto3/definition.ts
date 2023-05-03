@@ -10,6 +10,7 @@ import {
 } from "../../parser/proto3/nodes";
 import { primitiveTypeMap } from "../../parser/proto3/tokens";
 import { parseProto3 } from "../../parsercache";
+import { proto3Index } from "../../proto3Index";
 
 export const proto3DefinitionProvider: vscode.DefinitionProvider = {
   provideDefinition: (
@@ -132,23 +133,17 @@ const findFieldDefinition = (
   }
 
   if (!dtype.includes(".")) {
-    // message type in the same or other file.
-    // find the message type in the same file first.
-    let messageNode = findMessageNode(documentNode, dtype);
-    if (messageNode !== undefined) {
-      const res = [
-        {
-          targetUri: document.uri,
-          targetRange: new vscode.Range(
-            document.positionAt(messageNode.start),
-            document.positionAt(messageNode.end)
-          ),
-        },
-      ];
-      return new Promise((resolve) => {
-        resolve(res);
-      });
+    let pkg = documentNode.getPackage();
+    if (pkg === undefined) {
+      vscode.window.showWarningMessage(
+        "Cannot find package name in the proto file."
+      );
+      return;
     }
+
+    let defs = proto3Index.findMsgOrEnum(pkg.name, dtype);
+    // TODO: limit to importable files.
+    return Promise.resolve(defs.map((def) => def.link));
   }
 
   let names = dtype.split(".");
@@ -160,55 +155,9 @@ const findFieldDefinition = (
     packageName = names.slice(0, names.length - 1).join(".");
   }
 
-  // find symbol in imported files.
-  return Promise.all(
-    documentNode
-      .listImports()
-      .map(async (importNode: ImportNode): Promise<vscode.LocationLink[]> => {
-        let files = await findFile(importNode.getImportPath());
-        return Promise.all(
-          files.map(async (uri): Promise<vscode.LocationLink[]> => {
-            let document = await vscode.workspace.openTextDocument(uri);
-            return findMessageInDocument(document, packageName, typeName);
-          })
-        ).then((res) => res.flat());
-      })
-  ).then((res) => res.flat());
-};
-
-// find message type in imported files.
-const findMessageInDocument = (
-  document: vscode.TextDocument,
-  packageName: string,
-  dtype: string
-): vscode.LocationLink[] => {
-  let docNode: DocumentNode;
-  try {
-    docNode = parseProto3(document);
-  } catch (e) {
-    return [];
-  }
-
-  if (
-    docNode.getPackage() === undefined ||
-    docNode.getPackage()?.name !== packageName
-  ) {
-    return [];
-  }
-
-  let messageNode = findMessageNode(docNode, dtype);
-  if (messageNode !== undefined) {
-    return [
-      {
-        targetUri: document.uri,
-        targetRange: new vscode.Range(
-          document.positionAt(messageNode.start),
-          document.positionAt(messageNode.end)
-        ),
-      },
-    ];
-  }
-  return [];
+  // TODO: limit to importable files.
+  let defs = proto3Index.findMsgOrEnum(packageName, typeName);
+  return Promise.resolve(defs.map((def) => def.link));
 };
 
 const findMessageNode = (node: Node, name: string): MessageNode | undefined => {

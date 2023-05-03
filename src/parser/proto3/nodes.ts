@@ -54,7 +54,7 @@ export class DocumentNode extends Node {
   }
 
   getPackage(): PackageNode | undefined {
-    for (const child of this.children!) {
+    for (const child of this.children || []) {
       if (child.type === NodeType.package) {
         return child as PackageNode;
       }
