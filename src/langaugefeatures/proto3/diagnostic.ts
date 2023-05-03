@@ -5,6 +5,8 @@ import * as vscode from "vscode";
 
 import { isCommandAvailable, isExecutableFileAvailable } from "../../utils";
 
+// TODO: show another files' diagnostics if possible.
+
 // Generate a diagnostic from following steps.
 // 1. Try to compile the proto file.
 // 2. Try to run linter on the proto file.
@@ -188,6 +190,7 @@ function lintWithBuf(document: vscode.TextDocument): vscode.Diagnostic[] {
     return [];
   }
 
+  // TODO: filter with filename
   const diagnostics: vscode.Diagnostic[] = result.stdout
     .trim()
     .split("\n")
