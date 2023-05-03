@@ -1,5 +1,7 @@
 import * as cp from "child_process";
 import * as os from "os";
+import * as path from "path";
+import { TextEncoder } from "util";
 import * as vscode from "vscode";
 
 import { isCommandAvailable, isExecutableFileAvailable } from "../../utils";
@@ -9,18 +11,18 @@ export const proto3FormatProvider: vscode.DocumentFormattingEditProvider = {
     document: vscode.TextDocument,
     options: vscode.FormattingOptions,
     token: vscode.CancellationToken
-  ): vscode.TextEdit[] {
+  ): vscode.ProviderResult<vscode.TextEdit[]> {
+    // TODO: support cancellation?
     const formatOption = vscode.workspace.getConfiguration("protobuf3.format");
-    if (formatOption.get("provider") === "clang-format") {
+    const provider = formatOption.get("provider", "clang-format");
+    if (provider === "clang-format") {
       return formatUsingClangFormat(document);
-    } else if (formatOption.get("provider") === "buf") {
+    } else if (provider === "buf") {
       return formatUsingBuf(document);
     }
 
-    vscode.window.showErrorMessage(
-      `Unknown format provider: ${formatOption.get("provider")}`
-    );
-    return [];
+    vscode.window.showErrorMessage(`Unknown format provider: ${provider}`);
+    return null;
   },
 };
 
@@ -68,7 +70,9 @@ function formatUsingClangFormat(
   ];
 }
 
-function formatUsingBuf(document: vscode.TextDocument): vscode.TextEdit[] {
+async function formatUsingBuf(
+  document: vscode.TextDocument
+): Promise<vscode.TextEdit[]> {
   const bufOption = vscode.workspace.getConfiguration("protobuf3.buf");
   const bufPath = bufOption.get("executable", "buf");
 
@@ -87,14 +91,24 @@ function formatUsingBuf(document: vscode.TextDocument): vscode.TextEdit[] {
     args.push(arg);
   });
 
-  let cwd = vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath;
-  if (!cwd) {
-    cwd = os.tmpdir();
-  }
+  let cwd = path.join(os.tmpdir(), "buf-format-" + getRandomID());
+
+  let inputFile = vscode.Uri.file(
+    path.join(cwd, "sample-" + getRandomID() + ".proto")
+  );
+  await vscode.workspace.fs.createDirectory(vscode.Uri.file(cwd));
+  await vscode.workspace.fs.writeFile(
+    inputFile,
+    new TextEncoder().encode(document.getText())
+  );
+  let inputPath = inputFile.fsPath;
+
   let formatResult = cp.execFileSync(bufPath, args, {
-    input: document.getText(),
+    input: inputPath,
     cwd: cwd,
   });
+
+  // TODO: error handling
   return [
     new vscode.TextEdit(
       new vscode.Range(
@@ -106,4 +120,8 @@ function formatUsingBuf(document: vscode.TextDocument): vscode.TextEdit[] {
       formatResult.toString()
     ),
   ];
+}
+
+function getRandomID(): string {
+  return Math.floor(Math.random() * 100000000).toString();
 }
