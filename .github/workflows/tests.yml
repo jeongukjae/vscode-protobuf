@@ -23,9 +23,10 @@ jobs:
     - run: go version
     - name: install tools
       run: |
-        go install github.com/googleapis/api-linter/cmd/api-linter@latest
-        go install github.com/bufbuild/buf/cmd/buf@latest
-        apt-get update && apt-get install -y protobuf-compiler
+        go install \
+          github.com/googleapis/api-linter/cmd/api-linter@latest
+          github.com/bufbuild/buf/cmd/buf@latest
+        sudo apt-get update && sudo apt-get install -y protobuf-compiler
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
