@@ -26,7 +26,8 @@ suite("LanguageFeatrues >> Proto3 >> Format", () => {
       content: `syntax = "proto3";
 
 
-      package com.example.format;`,
+      package com.example.format;
+`,
     });
 
     await vscode.window.showTextDocument(doc);
@@ -63,7 +64,8 @@ package com.example.format;
       content: `syntax = "proto3";
 
 
-      package com.example.format;`,
+      package com.example.format;
+`,
     });
 
     await vscode.window.showTextDocument(doc);
