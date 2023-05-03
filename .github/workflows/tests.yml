@@ -25,6 +25,8 @@ jobs:
       run: |
         go install github.com/googleapis/api-linter/cmd/api-linter@latest
         go install github.com/bufbuild/buf/cmd/buf@latest
+        go install github.com/protocolbuffers/txtpbfmt/cmd/txtpbfmt@latest
+        sudo apt-get update && sudo apt-get install -y protobuf-compiler
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
