@@ -289,7 +289,9 @@ service ServiceName {
       },
     ];
 
-    setup(() => {
+    setup(function () {
+      this.timeout(10000);
+
       return Promise.all(
         repositories.map((repo) => {
           const url = `https://github.com/${repo.owner}/${repo.repo}/archive/HEAD.zip`;
@@ -319,7 +321,8 @@ service ServiceName {
     });
 
     repositories.forEach((repo) => {
-      test(`should parse ${repo.owner}/${repo.repo}`, () => {
+      test(`should parse ${repo.owner}/${repo.repo}`, function () {
+        this.timeout(10000);
         // open zipfile
         const zipPath = path.join(basedir, repo.owner, `${repo.repo}.zip`);
 
@@ -337,7 +340,7 @@ service ServiceName {
             }
           }
         });
-      }).timeout(10000);
+      });
     });
   });
 
