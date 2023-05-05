@@ -2,10 +2,14 @@ import { expect } from "chai";
 import * as vscode from "vscode";
 
 import { proto3DefinitionProvider } from "../../../langaugefeatures/proto3/definition";
+import { proto3Index } from "../../../proto3Index";
 import { rootPath } from "../../util";
 
 suite("LanguageFeatrues >> Proto3 >> Definition", () => {
   vscode.window.showInformationMessage("Start proto3Definition tests.");
+  setup(() => {
+    return proto3Index.initialize();
+  });
 
   test("should go to definition in single file", async () => {
     let doc = await vscode.workspace.openTextDocument(
