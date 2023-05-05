@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package com.example.definitions.imports;
+
+import "file2.proto";
+import "file3.proto";

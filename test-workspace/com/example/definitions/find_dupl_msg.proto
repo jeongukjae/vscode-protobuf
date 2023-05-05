@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package com.example.definitions;
+
+import "com/example/definitions/msg2.proto";
+import "com/example/definitions/msg2_dupl.proto";
+
+// Some test message
+message Msg {
+  Msg2 msg2 = 1;
+}

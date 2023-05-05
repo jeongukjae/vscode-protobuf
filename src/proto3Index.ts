@@ -107,9 +107,7 @@ export class Proto3Index {
         },
         type: Proto3Type.message,
       };
-    }
-
-    if (node.type === proto3Nodes.NodeType.enum) {
+    } else if (node.type === proto3Nodes.NodeType.enum) {
       key = pkg + "." + (node as proto3Nodes.EnumNode).name;
       link = {
         link: {

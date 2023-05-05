@@ -132,31 +132,32 @@ const findFieldDefinition = (
     });
   }
 
+  let pkg: string;
+  let typeName: string;
   if (!dtype.includes(".")) {
-    let pkg = documentNode.getPackage();
-    if (pkg === undefined) {
+    let pkg_ = documentNode.getPackage();
+    if (pkg_ === undefined) {
       vscode.window.showWarningMessage(
         "Cannot find package name in the proto file."
       );
       return;
     }
+    pkg = pkg_.name;
+    typeName = dtype;
+  } else {
+    let names = dtype.split(".");
 
-    let defs = proto3Index.findMsgOrEnum(pkg.name, dtype);
-    // TODO: limit to importable files.
-    return Promise.resolve(defs.map((def) => def.link));
-  }
+    typeName = dtype;
+    pkg = documentNode.getPackage()?.name ?? "";
 
-  let names = dtype.split(".");
-  let typeName = dtype;
-  let packageName: string = documentNode.getPackage()?.name ?? "";
-
-  if (names.length > 1) {
-    typeName = names[names.length - 1];
-    packageName = names.slice(0, names.length - 1).join(".");
+    if (names.length > 1) {
+      typeName = names[names.length - 1];
+      pkg = names.slice(0, names.length - 1).join(".");
+    }
   }
 
   // TODO: limit to importable files.
-  let defs = proto3Index.findMsgOrEnum(packageName, typeName);
+  let defs = proto3Index.findMsgOrEnum(pkg, typeName);
   return Promise.resolve(defs.map((def) => def.link));
 };
 
