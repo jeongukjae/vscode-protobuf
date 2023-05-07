@@ -16,17 +16,20 @@ export interface Proto3Link {
 }
 
 // create index for proto3 files.
-// The key is package.message (e.g. google.protobuf.Any) and the value is a list
-// of the location link to the definition.
 export class Proto3Index {
-  private index: Map<string, Proto3Link[]>;
+  // key: package + "." + message, value: location link
+  private symbolIndex: Map<string, Proto3Link[]>;
+  // key: uri, value: import paths
+  private importIndex: Map<string, string[]>;
 
   constructor() {
-    this.index = new Map<string, Proto3Link[]>();
+    this.symbolIndex = new Map<string, Proto3Link[]>();
+    this.importIndex = new Map<string, string[]>();
   }
 
   initialize = async () => {
-    this.index.clear();
+    this.symbolIndex.clear();
+    this.importIndex.clear();
 
     let uris = await vscode.workspace.findFiles("**/*.proto");
     await Promise.all(uris.map(this.addFileToIndex));
@@ -52,20 +55,21 @@ export class Proto3Index {
     }
 
     docNode.children?.forEach((child) => {
-      this.walkIndex(document, package_!.name, child);
+      this.walkSymbolIndex(document, package_!.name, child);
+      this.walkImportIndex(document, child);
     });
   };
 
   removeFile = (uri: vscode.Uri) => {
-    this.index.forEach((links, key) => {
+    this.symbolIndex.forEach((links, key) => {
       let newLinks = links.filter((link) => {
         return link.link.targetUri.fsPath !== uri.fsPath;
       });
 
       if (newLinks.length === 0) {
-        this.index.delete(key);
+        this.symbolIndex.delete(key);
       } else {
-        this.index.set(key, newLinks);
+        this.symbolIndex.set(key, newLinks);
       }
     });
   };
@@ -77,10 +81,12 @@ export class Proto3Index {
 
   findMsgOrEnum = (packageName: string, typeName: string): Proto3Link[] => {
     let key = packageName + "." + typeName;
-    return this.index.get(key) || [];
+    return this.symbolIndex.get(key) || [];
   };
 
-  private walkIndex = (
+  // TODO: add method to fetch all accessible files from a vscode.Uri.
+
+  private walkSymbolIndex = (
     document: vscode.TextDocument,
     pkg: string,
     node: proto3Nodes.Node
@@ -117,17 +123,37 @@ export class Proto3Index {
     }
 
     if (key !== undefined && link !== undefined) {
-      if (this.index.has(key)) {
-        this.index.get(key)?.push(link);
+      if (this.symbolIndex.has(key)) {
+        this.symbolIndex.get(key)?.push(link);
       } else {
-        this.index.set(key, [link]);
+        this.symbolIndex.set(key, [link]);
       }
     }
 
     // TODO: service?
 
     node.children?.forEach((child) => {
-      this.walkIndex(document, pkg, child);
+      this.walkSymbolIndex(document, pkg, child);
+    });
+  };
+
+  private walkImportIndex = (
+    document: vscode.TextDocument,
+    node: proto3Nodes.Node
+  ) => {
+    if (node.type === proto3Nodes.NodeType.import) {
+      let path = (node as proto3Nodes.ImportNode).path;
+      if (path !== undefined) {
+        if (this.importIndex.has(document.uri.fsPath)) {
+          this.importIndex.get(document.uri.fsPath)?.push(path);
+        } else {
+          this.importIndex.set(document.uri.fsPath, [path]);
+        }
+      }
+    }
+
+    node.children?.forEach((child) => {
+      this.walkImportIndex(document, child);
     });
   };
 }
