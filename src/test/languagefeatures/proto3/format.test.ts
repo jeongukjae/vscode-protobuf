@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { proto3FormatProvider } from "../../../langaugefeatures/proto3/format";
 import { isCommandAvailable } from "../../../utils";
 
-suite("LanguageFeatrues >> Proto3 >> Format", () => {
+suite("LanguageFeatures >> Proto3 >> Format", () => {
   vscode.window.showInformationMessage("Start proto3Format tests.");
 
   test("should be able to format temp with clang-format", async () => {

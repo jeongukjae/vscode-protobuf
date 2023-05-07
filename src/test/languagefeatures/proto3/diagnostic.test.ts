@@ -5,7 +5,7 @@ import { doProto3Diagnostic } from "../../../langaugefeatures/proto3/diagnostic"
 import { isCommandAvailable } from "../../../utils";
 import { rootPath } from "../../util";
 
-suite("LanguageFeatrues >> Proto3 >> Diagnostics", () => {
+suite("LanguageFeatures >> Proto3 >> Diagnostics", () => {
   vscode.window.showInformationMessage("Start proto3Diagnostics tests.");
 
   test("should generate diagnostics with protoc", async () => {

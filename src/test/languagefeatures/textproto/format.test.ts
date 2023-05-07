@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { textprotoFormatProvider } from "../../../langaugefeatures/textproto/format";
 import { isCommandAvailable } from "../../../utils";
 
-suite("LanguageFeatrues >> TextProto >> Format", () => {
+suite("LanguageFeatures >> TextProto >> Format", () => {
   vscode.window.showInformationMessage("Start TextProto Format tests.");
 
   test("should be able to format temp with txtpbfmt", async () => {

@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { proto3SymbolProvider } from "../../../langaugefeatures/proto3/symbol";
 import { rootPath } from "../../util";
 
-suite("LanguageFeatrues >> Proto3 >> SymbolProvider", () => {
+suite("LanguageFeatures >> Proto3 >> SymbolProvider", () => {
   vscode.window.showInformationMessage("Start proto3SymbolProvider tests.");
 
   test("should provide message type", async () => {
