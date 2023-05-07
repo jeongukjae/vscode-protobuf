@@ -11,12 +11,12 @@ import { proto3Index } from "./proto3Index";
 const PROTO3_ID = "protobuf3";
 const TEXT_PROTO_ID = "textproto";
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
+  await proto3Index.initialize();
+
   // proto3
   const diagnostics =
     vscode.languages.createDiagnosticCollection("protobuf-errors");
-
-  proto3Index.initialize();
 
   vscode.languages.registerDocumentFormattingEditProvider(
     PROTO3_ID,
