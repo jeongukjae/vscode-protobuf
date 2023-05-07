@@ -89,6 +89,8 @@ export class Proto3Index {
     let link: Proto3Link | undefined;
 
     if (node.type === proto3Nodes.NodeType.message) {
+      // TODO: fix nested message name.
+      // e.g. message A { message B {} } -> A.B
       key = pkg + "." + (node as proto3Nodes.MessageNode).name;
       link = {
         link: {

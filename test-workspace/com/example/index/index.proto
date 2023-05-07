@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package com.example.index;
+
+message IndexMsgSample1 {
+  message IndexMsgSample2 {}
+
+  enum IndexEnumSample2 {
+    INDEX_ENUM_SAMPLE2_UNSPECIFIED = 0;
+    INDEX_ENUM_SAMPLE2_1 = 1;
+    INDEX_ENUM_SAMPLE2_2 = 2;
+  }
+}
+
+enum IndexEnumSample1 {
+  INDEX_ENUM_SAMPLE1_UNSPECIFIED = 0;
+  INDEX_ENUM_SAMPLE1_1 = 1;
+  INDEX_ENUM_SAMPLE1_2 = 2;
+}
