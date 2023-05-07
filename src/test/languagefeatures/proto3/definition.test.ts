@@ -7,10 +7,8 @@ import { rootPath } from "../../util";
 
 suite("LanguageFeatures >> Proto3 >> Definition", () => {
   vscode.window.showInformationMessage("Start proto3Definition tests.");
-  suiteSetup((done) => {
-    proto3Index.initialize().then(() => {
-      done();
-    });
+  suiteSetup(async () => {
+    await proto3Index.initialize();
   });
 
   test("should go to definition in single file", async () => {

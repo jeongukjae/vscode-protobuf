@@ -30,32 +30,29 @@ export class Proto3Index {
 
     let uris = await vscode.workspace.findFiles("**/*.proto");
     await Promise.all(uris.map(this.addFileToIndex));
-
-    console.log(this.index);
   };
 
-  addFileToIndex = (uri: vscode.Uri): Thenable<void> => {
-    return vscode.workspace.openTextDocument(uri).then((document) => {
-      let docNode: proto3Nodes.DocumentNode;
-      try {
-        docNode = proto3Parser.parse(document.getText());
-      } catch (e) {
-        console.log(
-          "Cannot parse proto3 file: " + uri.fsPath + ", ignore it. e: " + e
-        );
-        return;
-      }
+  addFileToIndex = async (uri: vscode.Uri) => {
+    let document = await vscode.workspace.openTextDocument(uri);
+    let docNode: proto3Nodes.DocumentNode;
+    try {
+      docNode = proto3Parser.parse(document.getText());
+    } catch (e) {
+      console.log(
+        "Cannot parse proto3 file: " + uri.fsPath + ", ignore it. e: " + e
+      );
+      return;
+    }
 
-      let package_ = docNode.getPackage();
-      if (package_ === undefined) {
-        console.log("Cannot find package in proto3 file: " + uri.fsPath);
-        // show window message?
-        return;
-      }
+    let package_ = docNode.getPackage();
+    if (package_ === undefined) {
+      console.log("Cannot find package in proto3 file: " + uri.fsPath);
+      // show window message?
+      return;
+    }
 
-      docNode.children?.forEach((child) => {
-        this.walkIndex(document, package_!.name, child);
-      });
+    docNode.children?.forEach((child) => {
+      this.walkIndex(document, package_!.name, child);
     });
   };
 
@@ -80,11 +77,7 @@ export class Proto3Index {
 
   findMsgOrEnum = (packageName: string, typeName: string): Proto3Link[] => {
     let key = packageName + "." + typeName;
-    if (this.index.has(key)) {
-      return this.index.get(key) || [];
-    } else {
-      return [];
-    }
+    return this.index.get(key) || [];
   };
 
   private walkIndex = (
