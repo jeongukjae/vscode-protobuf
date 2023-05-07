@@ -6,12 +6,6 @@ import { rootPath } from "../../util";
 
 suite("LanguageFeatures >> Proto3 >> Definition", () => {
   vscode.window.showInformationMessage("Start proto3Definition tests.");
-  // activate vscode extension
-  suiteSetup(async () => {
-    await vscode.extensions
-      .getExtension("jeongukjae.vscode-protobuf")
-      ?.activate();
-  });
 
   test("should go to definition in single file", async () => {
     let doc = await vscode.workspace.openTextDocument(
@@ -71,19 +65,23 @@ suite("LanguageFeatures >> Proto3 >> Definition", () => {
     );
 
     let links = result as vscode.LocationLink[];
+    links = links.sort((a, b) => {
+      return a.targetUri.fsPath.localeCompare(b.targetUri.fsPath);
+    });
 
     expect(links).to.not.be.undefined;
     expect(links).lengthOf(2);
 
     expect(links[0].targetUri.fsPath).to.match(
-      /.*com\/example\/definitions\/msg2.proto$/
+      /.*com\/example\/definitions\/msg2_dupl.proto$/
     );
     expect(links[0].targetRange.start.line).to.equal(4);
     expect(links[0].targetRange.start.character).to.equal(0);
     expect(links[0].targetRange.end.line).to.equal(4);
     expect(links[0].targetRange.end.character).to.equal(15);
+
     expect(links[1].targetUri.fsPath).to.match(
-      /.*com\/example\/definitions\/msg2_dupl.proto$/
+      /.*com\/example\/definitions\/msg2.proto$/
     );
     expect(links[1].targetRange.start.line).to.equal(4);
     expect(links[1].targetRange.start.character).to.equal(0);
