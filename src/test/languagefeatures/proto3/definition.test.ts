@@ -52,6 +52,10 @@ suite("LanguageFeatures >> Proto3 >> Definition", () => {
     expect(links[0].targetRange.end.character).to.equal(15);
   });
 
+  test("should find map type definition");
+
+  test("should skip if privitive type");
+
   test("should find multiple definitions in multiple files", async () => {
     // NOTE: this is unexpected environment, but we should support it.
 
@@ -112,6 +116,29 @@ suite("LanguageFeatures >> Proto3 >> Definition", () => {
     expect(links[0].targetRange.end.character).to.equal(0);
   });
 
+  test("should find import definition - from workspaceroot", async () => {
+    let doc = await vscode.workspace.openTextDocument(
+      `${rootPath}/com/example/definitions/imports/file4.proto`
+    );
+    let result = await proto3DefinitionProvider.provideDefinition(
+      doc,
+      new vscode.Position(4, 5),
+      new vscode.CancellationTokenSource().token
+    );
+
+    let links = result as vscode.LocationLink[];
+
+    expect(links).to.not.be.undefined;
+    expect(links).lengthOf(1);
+    expect(links[0].targetUri.fsPath).to.match(
+      /.*com\/example\/definitions\/imports\/file5.proto$/
+    );
+    expect(links[0].targetRange.start.line).to.equal(0);
+    expect(links[0].targetRange.start.character).to.equal(0);
+    expect(links[0].targetRange.end.line).to.equal(0);
+    expect(links[0].targetRange.end.character).to.equal(0);
+  });
+
   test("should find multiple import definition", async () => {
     // NOTE: this is unexpected. but we should support it.
     let doc = await vscode.workspace.openTextDocument(
@@ -149,7 +176,7 @@ suite("LanguageFeatures >> Proto3 >> Definition", () => {
     expect(links[1].targetRange.end.character).to.equal(0);
   });
 
-  test.skip("should not be able to find msg from unimported file", async () => {
+  test("should not be able to find msg from unimported file", async () => {
     let doc = await vscode.workspace.openTextDocument(
       `${rootPath}/com/example/definitions/unimported/unimported_source.proto`
     );

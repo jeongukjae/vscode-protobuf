@@ -84,6 +84,9 @@ export class Proto3Index {
     return this.symbolIndex.get(key) || [];
   };
 
+  listImports = (uri: vscode.Uri): string[] => {
+    return this.importIndex.get(uri.fsPath) || [];
+  };
   // TODO: add method to fetch all accessible files from a vscode.Uri.
 
   private walkSymbolIndex = (
@@ -143,6 +146,8 @@ export class Proto3Index {
   ) => {
     if (node.type === proto3Nodes.NodeType.import) {
       let path = (node as proto3Nodes.ImportNode).path;
+      // strip start and end quote.
+      path = path.replace(/^("|')/, "").replace(/("|')$/, "");
       if (path !== undefined) {
         if (this.importIndex.has(document.uri.fsPath)) {
           this.importIndex.get(document.uri.fsPath)?.push(path);

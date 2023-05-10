@@ -4,7 +4,6 @@ import {
   DocumentNode,
   FieldNode,
   ImportNode,
-  MessageNode,
   Node,
   NodeType,
 } from "../../parser/proto3/nodes";
@@ -74,28 +73,26 @@ const findNodeContainingOffset = (
   return undefined;
 };
 
-const findFile = (path: string): Thenable<vscode.Uri[]> => {
-  return vscode.workspace.findFiles("**/" + path);
-};
-
 const findImportDefinition = (
   node: ImportNode
 ): vscode.ProviderResult<vscode.DefinitionLink[]> => {
-  return findFile(node.getImportPath()).then((uris) => {
-    if (uris.length === 0) {
-      return undefined;
-    }
+  return vscode.workspace
+    .findFiles("**/" + node.getImportPath())
+    .then((uris) => {
+      if (uris.length === 0) {
+        return [];
+      }
 
-    return uris.map((uri) => {
-      return {
-        targetUri: uri,
-        targetRange: new vscode.Range(
-          new vscode.Position(0, 0),
-          new vscode.Position(0, 0)
-        ),
-      };
+      return uris.map((uri) => {
+        return {
+          targetUri: uri,
+          targetRange: new vscode.Range(
+            new vscode.Position(0, 0),
+            new vscode.Position(0, 0)
+          ),
+        };
+      });
     });
-  });
 };
 
 const findFieldDefinition = (
@@ -156,22 +153,37 @@ const findFieldDefinition = (
     }
   }
 
-  // TODO: limit to importable files.
-  let defs = proto3Index.findMsgOrEnum(pkg, typeName);
-  return Promise.resolve(defs.map((def) => def.link));
+  return findAllAccessiblePaths(document).then((paths) => {
+    let defs = proto3Index.findMsgOrEnum(pkg, typeName);
+    console.log(defs, paths);
+    return defs
+      .filter((def) => paths.has(def.link.targetUri.fsPath))
+      .map((def) => def.link);
+  });
 };
 
-const findMessageNode = (node: Node, name: string): MessageNode | undefined => {
-  if (node.type === NodeType.message && (node as MessageNode).name === name) {
-    return node as MessageNode;
-  }
+const findAllAccessiblePaths = async (
+  doc: vscode.TextDocument
+): Promise<Set<string>> => {
+  let paths: Set<string> = new Set();
+  paths.add(doc.uri.fsPath);
 
-  for (const child of node.children || []) {
-    let msg = findMessageNode(child, name);
-    if (msg !== undefined) {
-      return msg;
+  let currentPath = proto3Index.listImports(doc.uri);
+  const iterate = async (paths: Set<string>, currentPath: string[]) => {
+    for (const path of currentPath) {
+      let files = await vscode.workspace.findFiles("**/" + path);
+
+      for (const file of files) {
+        if (paths.has(file.fsPath)) {
+          continue;
+        }
+        paths.add(file.fsPath);
+        let currentPath = proto3Index.listImports(file);
+        await iterate(paths, currentPath);
+      }
     }
-  }
+  };
 
-  return undefined;
+  await iterate(paths, currentPath);
+  return paths;
 };
