@@ -61,4 +61,6 @@ suite("Proto3Index", () => {
       /com\/example\/index\/index.proto/
     );
   });
+
+  test("should be able to update index");
 });
