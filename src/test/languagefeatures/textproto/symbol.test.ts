@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 
 import { textprotoSymbolProvider } from "../../../langaugefeatures/textproto/symbol";
 
-suite("LanguageFeatrues >> TextProto >> SymbolProvider", () => {
+suite("LanguageFeatures >> TextProto >> SymbolProvider", () => {
   vscode.window.showInformationMessage("Start TextProto SymbolProvider tests.");
 
   test("should provide field type", async () => {

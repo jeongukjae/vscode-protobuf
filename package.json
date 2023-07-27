@@ -180,8 +180,8 @@
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
     "format": "prettier --write \"src/**/*.ts\"",
-    "pretest": "yarn run compile",
     "coverage": "c8 yarn test",
+    "pretest": "yarn run compile",
     "test": "node ./out/test/runTest.js",
     "pretest:unit": "yarn run compile",
     "test:unit": "mocha \"src/test/**/*.unit.test.ts\" --require ts-node/register --watch-files src --timeout 10000 --ui tdd"

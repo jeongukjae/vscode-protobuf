@@ -4,9 +4,9 @@ package com.example.definitions;
 
 // Some test message
 message OriginalMsg {
-    Foo foo = 1;
+  Foo foo = 1;
 }
 
 message Foo {
-    string bar = 1;
+  string bar = 1;
 }

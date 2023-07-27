@@ -4,12 +4,12 @@ import {
   DocumentNode,
   FieldNode,
   ImportNode,
-  MessageNode,
   Node,
   NodeType,
 } from "../../parser/proto3/nodes";
 import { primitiveTypeMap } from "../../parser/proto3/tokens";
 import { parseProto3 } from "../../parsercache";
+import { proto3Index } from "../../proto3Index";
 
 export const proto3DefinitionProvider: vscode.DefinitionProvider = {
   provideDefinition: (
@@ -73,28 +73,26 @@ const findNodeContainingOffset = (
   return undefined;
 };
 
-const findFile = (path: string): Thenable<vscode.Uri[]> => {
-  return vscode.workspace.findFiles("**/" + path);
-};
-
 const findImportDefinition = (
   node: ImportNode
 ): vscode.ProviderResult<vscode.DefinitionLink[]> => {
-  return findFile(node.getImportPath()).then((uris) => {
-    if (uris.length === 0) {
-      return undefined;
-    }
+  return vscode.workspace
+    .findFiles("**/" + node.getImportPath())
+    .then((uris) => {
+      if (uris.length === 0) {
+        return [];
+      }
 
-    return uris.map((uri) => {
-      return {
-        targetUri: uri,
-        targetRange: new vscode.Range(
-          new vscode.Position(0, 0),
-          new vscode.Position(0, 0)
-        ),
-      };
+      return uris.map((uri) => {
+        return {
+          targetUri: uri,
+          targetRange: new vscode.Range(
+            new vscode.Position(0, 0),
+            new vscode.Position(0, 0)
+          ),
+        };
+      });
     });
-  });
 };
 
 const findFieldDefinition = (
@@ -131,97 +129,61 @@ const findFieldDefinition = (
     });
   }
 
+  let pkg: string;
+  let typeName: string;
   if (!dtype.includes(".")) {
-    // message type in the same or other file.
-    // find the message type in the same file first.
-    let messageNode = findMessageNode(documentNode, dtype);
-    if (messageNode !== undefined) {
-      const res = [
-        {
-          targetUri: document.uri,
-          targetRange: new vscode.Range(
-            document.positionAt(messageNode.start),
-            document.positionAt(messageNode.end)
-          ),
-        },
-      ];
-      return new Promise((resolve) => {
-        resolve(res);
-      });
+    let pkg_ = documentNode.getPackage();
+    if (pkg_ === undefined) {
+      vscode.window.showWarningMessage(
+        "Cannot find package name in the proto file."
+      );
+      return;
+    }
+    pkg = pkg_.name;
+    typeName = dtype;
+  } else {
+    let names = dtype.split(".");
+
+    typeName = dtype;
+    pkg = documentNode.getPackage()?.name ?? "";
+
+    if (names.length > 1) {
+      typeName = names[names.length - 1];
+      pkg = names.slice(0, names.length - 1).join(".");
     }
   }
 
-  let names = dtype.split(".");
-  let typeName = dtype;
-  let packageName: string = documentNode.getPackage()?.name ?? "";
-
-  if (names.length > 1) {
-    typeName = names[names.length - 1];
-    packageName = names.slice(0, names.length - 1).join(".");
-  }
-
-  // find symbol in imported files.
-  return Promise.all(
-    documentNode
-      .listImports()
-      .map(async (importNode: ImportNode): Promise<vscode.LocationLink[]> => {
-        let files = await findFile(importNode.getImportPath());
-        return Promise.all(
-          files.map(async (uri): Promise<vscode.LocationLink[]> => {
-            let document = await vscode.workspace.openTextDocument(uri);
-            return findMessageInDocument(document, packageName, typeName);
-          })
-        ).then((res) => res.flat());
-      })
-  ).then((res) => res.flat());
+  return findAllAccessiblePaths(document).then((paths) => {
+    let defs = proto3Index.findMsgOrEnum(pkg, typeName);
+    console.log(defs, paths);
+    return defs
+      .filter((def) => paths.has(def.link.targetUri.fsPath))
+      .map((def) => def.link);
+  });
 };
 
-// find message type in imported files.
-const findMessageInDocument = (
-  document: vscode.TextDocument,
-  packageName: string,
-  dtype: string
-): vscode.LocationLink[] => {
-  let docNode: DocumentNode;
-  try {
-    docNode = parseProto3(document);
-  } catch (e) {
-    return [];
-  }
+const findAllAccessiblePaths = async (
+  doc: vscode.TextDocument
+): Promise<Set<string>> => {
+  let paths: Set<string> = new Set();
+  paths.add(doc.uri.fsPath);
 
-  if (
-    docNode.getPackage() === undefined ||
-    docNode.getPackage()?.name !== packageName
-  ) {
-    return [];
-  }
+  let currentPath = proto3Index.listImports(doc.uri);
+  const iterate = async (paths: Set<string>, currentPath: string[]) => {
+    for (const path of currentPath) {
+      let files = await vscode.workspace.findFiles("**/" + path);
 
-  let messageNode = findMessageNode(docNode, dtype);
-  if (messageNode !== undefined) {
-    return [
-      {
-        targetUri: document.uri,
-        targetRange: new vscode.Range(
-          document.positionAt(messageNode.start),
-          document.positionAt(messageNode.end)
-        ),
-      },
-    ];
-  }
-  return [];
-};
-
-const findMessageNode = (node: Node, name: string): MessageNode | undefined => {
-  if (node.type === NodeType.message && (node as MessageNode).name === name) {
-    return node as MessageNode;
-  }
-
-  for (const child of node.children || []) {
-    let msg = findMessageNode(child, name);
-    if (msg !== undefined) {
-      return msg;
+      for (const file of files) {
+        if (paths.has(file.fsPath)) {
+          continue;
+        }
+        paths.add(file.fsPath);
+        let currentPath = proto3Index.listImports(file);
+        await iterate(paths, currentPath);
+      }
     }
-  }
+  };
 
-  return undefined;
+  await iterate(paths, currentPath);
+  return paths;
 };

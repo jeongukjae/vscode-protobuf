@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package com.example.definitions;
+
+message Msg1 {}
