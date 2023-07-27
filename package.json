@@ -10,7 +10,7 @@
   "description": "A VSCode Extension for Protocol Buffers",
   "version": "0.3.0",
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.80.0"
   },
   "categories": [
     "Programming Languages",
@@ -194,7 +194,7 @@
     "@types/glob": "^8.0.1",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
-    "@types/vscode": "^1.75.0",
+    "@types/vscode": "^1.80.0",
     "@typescript-eslint/eslint-plugin": "^5.49.0",
     "@typescript-eslint/parser": "^5.49.0",
     "@vscode/test-electron": "^2.2.2",
