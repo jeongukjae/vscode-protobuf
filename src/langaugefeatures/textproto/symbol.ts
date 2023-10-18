@@ -4,7 +4,7 @@ import {
   DocumentNode,
   Node,
   NodeType,
-  ValueNode,
+  FieldNode,
 } from "../../parser/textproto/nodes";
 import { parseTextProto } from "../../parsercache";
 
@@ -26,22 +26,26 @@ export const textprotoSymbolProvider: vscode.DocumentSymbolProvider = {
       return cached[document.uri.toString()];
     }
 
-    console.log(docNode);
-
     const walk = (node: Node) => {
       let symb: vscode.SymbolInformation;
       switch (node.type) {
         case NodeType.field:
-          const syntaxNode = node as ValueNode;
+          const fieldNode = node as FieldNode;
+          if (!fieldNode.key) {
+            break;
+          }
+
           symb = new vscode.SymbolInformation(
-            syntaxNode.name,
+            document
+              .getText()
+              .substring(fieldNode.key.getStart(), fieldNode.key.getEnd()),
             vscode.SymbolKind.Field,
             "",
             new vscode.Location(
               document.uri,
               new vscode.Range(
-                document.positionAt(syntaxNode.start),
-                document.positionAt(syntaxNode.end)
+                document.positionAt(fieldNode.getStart()),
+                document.positionAt(fieldNode.getEnd())
               )
             )
           );

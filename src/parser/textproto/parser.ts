@@ -1,20 +1,29 @@
 // Specification: https://protobuf.dev/reference/protobuf/textformat-spec/
-import { TokenStream } from "../tokenstream";
-import { CommentNode, DocumentNode, Node, NodeType, ValueNode } from "./nodes";
+import { TokenStream } from "../core/tokenstream";
+import {
+  CommentNode,
+  DocumentNode,
+  Node,
+  NodeType,
+  FieldNode,
+  KeyNode,
+  ValueNode,
+} from "./nodes";
 import { TextProtoTokenizer } from "./tokenizer";
-import { Token, TokenType } from "./tokens";
+import { CommentToken, Token, TokenType } from "./tokens";
 
 export interface ParserContext {
+  text: string;
   tokenStream: TokenStream<Token>;
   document: DocumentNode;
-  current: Node[];
+  current: Node[]; // We need current to be a stack to track nested fields.
 }
 
 const getCurrent = (ctx: ParserContext): Node =>
   ctx.current[ctx.current.length - 1];
 
-const getLastChildren = (node: Node): Node | undefined => {
-  if (node.children !== undefined && node.children.length > 0) {
+const getLastChild = (node: Node): Node | undefined => {
+  if (node.children.length > 0) {
     return node.children[node.children.length - 1];
   }
   return undefined;
@@ -24,36 +33,23 @@ const getLastChildren = (node: Node): Node | undefined => {
 // continue to move next until it is not a comment.
 const moveNext = (ctx: ParserContext) => {
   ctx.tokenStream.moveNext();
-  if (ctx.tokenStream.getCurrentToken().type === TokenType.comment) {
-    let comment: CommentNode;
 
-    // if the last children is a comment, then we can just extend it.
-    if (
-      getCurrent(ctx).children !== undefined &&
-      getLastChildren(getCurrent(ctx))!.type === NodeType.comment
-    ) {
-      comment = getLastChildren(getCurrent(ctx)) as CommentNode;
-      comment.end =
-        ctx.tokenStream.getCurrentToken().start +
-        ctx.tokenStream.getCurrentToken().length;
+  while (ctx.tokenStream.getCurrentToken().type === TokenType.comment) {
+    const lastChild = getLastChild(getCurrent(ctx));
+    if (lastChild !== undefined && lastChild.type === NodeType.comment) {
+      // Extend the last comment.
+      let comment = lastChild as CommentNode;
+      comment.tokens.push(ctx.tokenStream.getCurrentToken());
     } else {
-      comment = new CommentNode(
-        ctx.tokenStream.getCurrentToken().start,
-        ctx.tokenStream.getCurrentToken().start +
-          ctx.tokenStream.getCurrentToken().length
+      // Add a new comment.
+      getCurrent(ctx).add(
+        new CommentNode([ctx.tokenStream.getCurrentToken() as CommentToken])
       );
-      comment.setParent(getCurrent(ctx));
-      getCurrent(ctx).add(comment);
     }
-    if (ctx.tokenStream.isEndOfStream()) {
-      return;
-    }
-    ctx.tokenStream.moveNext();
 
-    while (ctx.tokenStream.getCurrentToken().type === TokenType.comment) {
-      comment.end =
-        ctx.tokenStream.getCurrentToken().start +
-        ctx.tokenStream.getCurrentToken().length;
+    if (ctx.tokenStream.isEndOfStream()) {
+      break;
+    } else {
       ctx.tokenStream.moveNext();
     }
   }
@@ -68,13 +64,14 @@ export class TextProtoParser {
 
   parse(text: string): DocumentNode {
     let tokens = this.tokenizer.tokenize(text);
-    let document = new DocumentNode(0, text.length);
+    let document = new DocumentNode(tokens);
 
     if (tokens.length === 0) {
       return document;
     }
 
     let ctx = {
+      text: text,
       tokenStream: new TokenStream(text, tokens),
       document: document,
       current: [document],
@@ -86,41 +83,43 @@ export class TextProtoParser {
 
   private _parse(ctx: ParserContext) {
     do {
+      // In the root level, we can only have comments and fields.
       switch (ctx.tokenStream.getCurrentToken().type) {
         case TokenType.comment:
-          let comment = new CommentNode(
-            ctx.tokenStream.getCurrentToken().start,
-            ctx.tokenStream.getCurrentToken().start +
-              ctx.tokenStream.getCurrentToken().length
-          );
-          comment.setParent(getCurrent(ctx));
+          let comment = new CommentNode([
+            ctx.tokenStream.getCurrentToken() as CommentToken,
+          ]);
           getCurrent(ctx).add(comment);
           break;
+
         default:
           this._handleField(ctx);
       }
-      if (ctx.tokenStream.isEndOfStream()) {
-        break;
-      }
 
-      moveNext(ctx);
-      if (ctx.tokenStream.isEndOfStream()) {
-        break;
+      if (!ctx.tokenStream.isEndOfStream()) {
+        moveNext(ctx);
       }
-    } while (true);
+    } while (!ctx.tokenStream.isEndOfStream());
   }
 
   private _handleField(ctx: ParserContext) {
-    let nameStartToken = ctx.tokenStream.getCurrentToken();
-    let nameText = "";
+    let fieldNode = new FieldNode();
+    getCurrent(ctx).add(fieldNode);
+    ctx.current.push(fieldNode);
 
-    if (ctx.tokenStream.getCurrentToken().type === TokenType.identifier) {
-      nameText = ctx.tokenStream.getCurrentTokenText();
-    } else if (
-      ctx.tokenStream.getCurrentToken().type === TokenType.openBracket
-    ) {
+    let startTokenIndex = ctx.tokenStream.position;
+    let startToken = ctx.tokenStream.getCurrentToken();
+
+    // Construct KeyNode.
+    if (startToken.type === TokenType.identifier) {
+      const keyNode = new KeyNode([startToken]);
+      fieldNode.setKey(keyNode);
+    } else if (startToken.type === TokenType.openBracket) {
       // Extension. e.g. [com.example.ext_field], [com.example/ExtMessage]
-      moveNext(ctx);
+      const keyNode = new KeyNode([startToken]);
+      fieldNode.setKey(keyNode);
+
+      ctx.tokenStream.moveNext();
       while (
         ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket
       ) {
@@ -130,15 +129,15 @@ export class TextProtoParser {
             `Expected identifier, but got ${ctx.tokenStream.getCurrentTokenText()}`
           );
         }
-        nameText += ctx.tokenStream.getCurrentTokenText();
-        moveNext(ctx);
+        keyNode.tokens.push(ctx.tokenStream.getCurrentToken());
+        ctx.tokenStream.moveNext();
 
         if (ctx.tokenStream.getCurrentToken().type === TokenType.dot) {
-          nameText += ".";
-          moveNext(ctx);
+          keyNode.tokens.push(ctx.tokenStream.getCurrentToken());
+          ctx.tokenStream.moveNext();
         } else if (ctx.tokenStream.getCurrentToken().type === TokenType.slash) {
-          nameText += "/";
-          moveNext(ctx);
+          keyNode.tokens.push(ctx.tokenStream.getCurrentToken());
+          ctx.tokenStream.moveNext();
         } else if (
           ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket
         ) {
@@ -148,100 +147,93 @@ export class TextProtoParser {
           );
         }
       }
+      keyNode.tokens.push(ctx.tokenStream.getCurrentToken()); // close bracket
     } else {
       throw this._generateError(
         ctx,
         `Expected identifier, but got ${ctx.tokenStream.getCurrentTokenText()}`
       );
     }
+
     moveNext(ctx);
 
-    let node = new ValueNode(nameText, nameStartToken.start, 0);
-    getCurrent(ctx).add(node);
-    node.setParent(getCurrent(ctx));
-    ctx.current.push(node);
+    // Construct ValueNode.
+    let valueStartTokenIndex = ctx.tokenStream.position;
+    const valueNode = new ValueNode();
+    fieldNode.setValue(valueNode);
+    ctx.current.push(valueNode);
 
-    const handleNested = (lastTokenType: TokenType) => {
-      // recursive, message type
-      node.setNested(true);
-      moveNext(ctx);
-
-      while (ctx.tokenStream.getCurrentToken().type !== lastTokenType) {
-        this._handleField(ctx);
+    switch (ctx.tokenStream.getCurrentToken().type) {
+      // scalar or message field.
+      case TokenType.colon: {
         moveNext(ctx);
-      }
-    };
+        valueStartTokenIndex += 1;
 
-    const handleRepeated = () => {
-      moveNext(ctx);
-      while (
-        ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket
-      ) {
-        this._handleValue(ctx, node, handleNested);
-        moveNext(ctx);
-
-        if (ctx.tokenStream.getCurrentToken().type === TokenType.comma) {
-          moveNext(ctx);
-        } else if (
-          ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket
-        ) {
-          throw this._generateError(
-            ctx,
-            `Expected close bracket, but got ${ctx.tokenStream.getCurrentTokenText()}`
-          );
+        if (ctx.tokenStream.getCurrentToken().type === TokenType.openBracket) {
+          this._handleRepeated(ctx);
+        } else {
+          this._handleValue(ctx);
         }
+        break;
       }
-    };
 
-    if (ctx.tokenStream.getCurrentToken().type === TokenType.colon) {
-      moveNext(ctx);
+      // message field.
+      case TokenType.openBrace:
+        this._handleNested(ctx, TokenType.closeBrace);
+        break;
 
-      if (ctx.tokenStream.getCurrentToken().type === TokenType.openBracket) {
-        handleRepeated();
-      } else {
-        this._handleValue(ctx, node, handleNested);
-      }
-    } else if (ctx.tokenStream.getCurrentToken().type === TokenType.openBrace) {
-      handleNested(TokenType.closeBrace);
-    } else if (ctx.tokenStream.getCurrentToken().type === TokenType.less) {
-      handleNested(TokenType.greater);
-    } else if (
-      ctx.tokenStream.getCurrentToken().type === TokenType.openBracket
-    ) {
-      handleRepeated();
-    } else {
-      throw this._generateError(
-        ctx,
-        `Expected colon, but got ${ctx.tokenStream.getCurrentTokenText()}`
-      );
+      // message field.
+      case TokenType.less:
+        this._handleNested(ctx, TokenType.greater);
+        break;
+
+      // repeated message field.
+      case TokenType.openBracket:
+        this._handleRepeated(ctx);
+        break;
+
+      default:
+        throw this._generateError(
+          ctx,
+          "Expected colon, open brace, open bracket or less token, " +
+            `but got ${ctx.tokenStream.getCurrentTokenText()}`
+        );
     }
 
+    valueNode.tokens = ctx.tokenStream.tokens.slice(
+      valueStartTokenIndex,
+      ctx.tokenStream.position + 1
+    );
+    ctx.current.pop();
+
+    // skip last comma or semicolon
     if (
-      ctx.tokenStream.getNextToken() !== undefined &&
+      !ctx.tokenStream.isEndOfStream() &&
       (ctx.tokenStream.getNextToken().type === TokenType.comma ||
         ctx.tokenStream.getNextToken().type === TokenType.semicolon)
     ) {
-      // skip last comma or semicolon
       moveNext(ctx);
     }
-    node.end =
-      ctx.tokenStream.getCurrentToken().start +
-      ctx.tokenStream.getCurrentToken().length;
+
+    fieldNode.tokens = ctx.tokenStream.tokens.slice(
+      startTokenIndex,
+      ctx.tokenStream.position + 1
+    );
     ctx.current.pop();
   }
 
-  private _handleValue(
-    ctx: ParserContext,
-    node: ValueNode,
-    handleNested: (_: TokenType) => void
-  ) {
+  private _handleValue(ctx: ParserContext) {
     if (ctx.tokenStream.getCurrentToken().type === TokenType.openBrace) {
-      handleNested(TokenType.closeBrace);
+      this._handleNested(ctx, TokenType.closeBrace);
     } else if (ctx.tokenStream.getCurrentToken().type === TokenType.less) {
-      handleNested(TokenType.greater);
-    } else if (ctx.tokenStream.getCurrentToken().type === TokenType.hyphen) {
+      this._handleNested(ctx, TokenType.greater);
+    } else if (
+      [TokenType.hyphen, TokenType.plus].includes(
+        ctx.tokenStream.getCurrentToken().type
+      )
+    ) {
       // with value (float or integer)
-      moveNext(ctx);
+      ctx.tokenStream.moveNext();
 
       if (
         ![TokenType.float, TokenType.integer].includes(
@@ -276,8 +268,40 @@ export class TextProtoParser {
           ctx.tokenStream.getNextToken() !== undefined &&
           ctx.tokenStream.getNextToken().type === TokenType.string
         ) {
-          moveNext(ctx);
+          ctx.tokenStream.moveNext();
         }
+      }
+    }
+  }
+
+  // NOTE: lastTokenType should be passed. It can be either closeBrace (}) or
+  // greater (>).
+  private _handleNested(ctx: ParserContext, lastTokenType: TokenType) {
+    moveNext(ctx);
+
+    while (ctx.tokenStream.getCurrentToken().type !== lastTokenType) {
+      this._handleField(ctx);
+      moveNext(ctx);
+    }
+  }
+
+  private _handleRepeated(ctx: ParserContext) {
+    moveNext(ctx);
+
+    while (ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket) {
+      this._handleValue(ctx);
+      moveNext(ctx);
+
+      if (ctx.tokenStream.getCurrentToken().type === TokenType.comma) {
+        moveNext(ctx);
+      } else if (
+        ctx.tokenStream.getCurrentToken().type !== TokenType.closeBracket
+      ) {
+        throw this._generateError(
+          ctx,
+          "Expected close bracket, " +
+            `but got ${ctx.tokenStream.getCurrentTokenText()}`
+        );
       }
     }
   }

@@ -1,6 +1,6 @@
 import { expect } from "chai";
 
-import { CharacterStream } from "../../parser/chstream";
+import { CharacterStream } from "../../../parser/core/chstream";
 
 suite("Parser >> CharacterStream", () => {
   test("should be able to move forward", () => {

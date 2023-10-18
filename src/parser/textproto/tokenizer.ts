@@ -2,19 +2,33 @@
 // https://protobuf.dev/reference/protobuf/textformat-spec/
 import Char from "typescript-char";
 
-import { CharacterStream } from "../chstream";
+import { CharacterStream } from "../core/chstream";
 import {
   canBeIdentifier,
   canBeStartIdentifier,
   isDecimal,
   isHex,
   isOctal,
-} from "../utils";
+} from "../core/utils";
 import {
   BooleanToken,
-  Comment,
+  CloseBraceToken,
+  CloseBracketToken,
+  ColonToken,
+  CommaToken,
+  CommentToken,
+  DotToken,
   FloatToken,
+  GreaterToken,
+  HyphenToken,
+  IdentifierToken,
   IntegerToken,
+  LessToken,
+  OpenBraceToken,
+  OpenBracketToken,
+  SemicolonToken,
+  SlashToken,
+  StringToken,
   Token,
   TokenType,
 } from "./tokens";
@@ -26,23 +40,7 @@ export interface TokenizerContext {
 }
 
 export class TextProtoTokenizer {
-  tokenize(input: string, start?: number, length?: number): Token[] {
-    start = start || 0;
-    length = length || input.length;
-
-    if (
-      start < 0 ||
-      length < 0 ||
-      start > input.length ||
-      start + length > input.length
-    ) {
-      throw new Error("Invalid start or length");
-    }
-    if (!(start === 0 && length === input.length)) {
-      // TODO: substr start ~ start+length?
-      input = input.substring(0, start + length);
-    }
-
+  tokenize(input: string): Token[] {
     let ctx: TokenizerContext = {
       chstream: new CharacterStream(input),
       tokens: [],
@@ -65,6 +63,7 @@ export class TextProtoTokenizer {
     this._handleChar(ctx);
   }
 
+  // Main processing function.
   private _handleChar(ctx: TokenizerContext) {
     switch (ctx.chstream.getCurrentChar()) {
       case Char.Hash: {
@@ -72,9 +71,7 @@ export class TextProtoTokenizer {
         return;
       }
       case Char.Slash: {
-        ctx.tokens.push(
-          Token.create(TokenType.slash, ctx.chstream.position, 1)
-        );
+        ctx.tokens.push(new SlashToken(ctx.chstream.position));
         ctx.chstream.moveNext();
         return;
       }
@@ -84,105 +81,91 @@ export class TextProtoTokenizer {
         return;
       }
       case Char.OpenBrace: {
-        ctx.tokens.push(
-          Token.create(TokenType.openBrace, ctx.chstream.position, 1)
-        );
+        ctx.tokens.push(new OpenBraceToken(ctx.chstream.position));
         ctx.chstream.moveNext();
         return;
       }
       case Char.CloseBrace: {
-        ctx.tokens.push(
-          Token.create(TokenType.closeBrace, ctx.chstream.position, 1)
-        );
+        ctx.tokens.push(new CloseBraceToken(ctx.chstream.position));
         ctx.chstream.moveNext();
         return;
       }
       case Char.OpenBracket: {
-        ctx.tokens.push(
-          Token.create(TokenType.openBracket, ctx.chstream.position, 1)
-        );
+        ctx.tokens.push(new OpenBracketToken(ctx.chstream.position));
         ctx.chstream.moveNext();
         return;
       }
       case Char.CloseBracket: {
-        ctx.tokens.push(
-          Token.create(TokenType.closeBracket, ctx.chstream.position, 1)
-        );
+        ctx.tokens.push(new CloseBracketToken(ctx.chstream.position));
         ctx.chstream.moveNext();
         return;
       }
       case Char.Less: {
-        ctx.tokens.push(Token.create(TokenType.less, ctx.chstream.position, 1));
+        ctx.tokens.push(new LessToken(ctx.chstream.position));
         ctx.chstream.moveNext();
         return;
       }
       case Char.Greater: {
-        ctx.tokens.push(
-          Token.create(TokenType.greater, ctx.chstream.position, 1)
-        );
+        ctx.tokens.push(new GreaterToken(ctx.chstream.position));
         ctx.chstream.moveNext();
         return;
       }
       case Char.Colon: {
-        ctx.tokens.push(
-          Token.create(TokenType.colon, ctx.chstream.position, 1)
-        );
+        ctx.tokens.push(new ColonToken(ctx.chstream.position));
         ctx.chstream.moveNext();
         return;
       }
       case Char.Semicolon: {
-        ctx.tokens.push(
-          Token.create(TokenType.semicolon, ctx.chstream.position, 1)
-        );
+        ctx.tokens.push(new SemicolonToken(ctx.chstream.position));
         ctx.chstream.moveNext();
         return;
       }
       case Char.Comma: {
-        ctx.tokens.push(
-          Token.create(TokenType.comma, ctx.chstream.position, 1)
-        );
+        ctx.tokens.push(new CommaToken(ctx.chstream.position));
+        ctx.chstream.moveNext();
+        return;
+      }
+      case Char.Hyphen: {
+        ctx.tokens.push(new HyphenToken(ctx.chstream.position));
+        ctx.chstream.moveNext();
+        return;
+      }
+      case Char.Plus: {
+        ctx.tokens.push(new HyphenToken(ctx.chstream.position));
         ctx.chstream.moveNext();
         return;
       }
       default: {
         if (this._canBeNumber(ctx)) {
-          if (this._maybeHandleNumber(ctx)) {
-            if (
-              !(
-                ctx.chstream.isEndOfStream() ||
-                ctx.chstream.isAtWhitespace() ||
-                !canBeStartIdentifier(ctx.chstream.getCurrentChar())
-              )
-            ) {
-              throw this._generateError(
-                ctx,
-                "Invalid number. whitespace expected"
-              );
-            }
-            return;
+          this._maybeHandleNumber(ctx);
+
+          // After the number, there should be whitespace or non-identifier
+          // char.
+          if (
+            !(
+              ctx.chstream.isEndOfStream() ||
+              ctx.chstream.isAtWhitespace() ||
+              !canBeStartIdentifier(ctx.chstream.getCurrentChar())
+            )
+          ) {
+            throw this._generateError(
+              ctx,
+              "Invalid number. whitespace expected"
+            );
           }
+          return;
         }
 
         // Dot should be handled after number because float literal can start
         // with dot.
         if (ctx.chstream.getCurrentChar() === Char.Period) {
-          ctx.tokens.push(
-            Token.create(TokenType.dot, ctx.chstream.position, 1)
-          );
+          ctx.tokens.push(new DotToken(ctx.chstream.position));
           ctx.chstream.moveNext();
           return;
         }
 
-        // just single hyphen. (when it is not part of number)
-        if (ctx.chstream.getCurrentChar() === Char.Hyphen) {
-          ctx.tokens.push(
-            Token.create(TokenType.hyphen, ctx.chstream.position, 1)
-          );
-          ctx.chstream.moveNext();
-          return;
-        }
-
-        // true, and false are handled in _maybeHandleIdentifierAndKeyword.
+        // booleans are also handled in _maybeHandleIdentifierAndKeyword,
+        // since just checking for true/false is enough.
         if (this._maybeHandleIdentifierAndKeyword(ctx)) {
           return;
         }
@@ -192,146 +175,79 @@ export class TextProtoTokenizer {
     }
   }
 
+  // Just skip to the end of line and create comment token.
   private _handleSingleLineComment(ctx: TokenizerContext) {
     let start = ctx.chstream.position;
     ctx.chstream.skipToLineBreak();
 
     const length = ctx.chstream.position - start;
-    const comment = new Comment(
-      start,
-      length,
-      ctx.chstream.text.substring(start, start + length)
+    ctx.tokens.push(
+      new CommentToken(
+        start,
+        length,
+        ctx.chstream.text.substring(start, start + length)
+      )
     );
-    ctx.tokens.push(comment);
   }
 
+  // Handle single/double quoted string.
   private _handleString(ctx: TokenizerContext) {
-    const quote = ctx.chstream.getCurrentChar();
+    const firstQuote = ctx.chstream.getCurrentChar();
     let start = ctx.chstream.position;
     ctx.chstream.moveNext();
 
     while (!ctx.chstream.isEndOfStream()) {
-      if (ctx.chstream.getCurrentChar() === quote) {
+      if (ctx.chstream.getCurrentChar() === firstQuote) {
         ctx.chstream.moveNext();
         break;
       }
+
+      // handle escaped quote.
       if (
         ctx.chstream.getCurrentChar() === Char.Backslash &&
-        ctx.chstream.nextChar === quote
+        ctx.chstream.getNextChar() === firstQuote
       ) {
         ctx.chstream.moveNext();
       }
+
       ctx.chstream.moveNext();
     }
 
     const length = ctx.chstream.position - start;
-    ctx.tokens.push(Token.create(TokenType.string, start, length));
+    ctx.tokens.push(
+      new StringToken(
+        start,
+        length,
+        ctx.chstream.text.substring(start, start + length)
+      )
+    );
   }
 
   private _canBeNumber(ctx: TokenizerContext): boolean {
-    const charCanBeNumber = (
-      chstream: CharacterStream,
-      offset: number
-    ): boolean => {
-      const ch = chstream.lookAhead(offset);
-      const nextchar = chstream.lookAhead(offset + 1);
+    // NOTE: nan and inf are handled in _maybeHandleIdentifierAndKeyword.
+    const ch = ctx.chstream.getCurrentChar();
+    const nextchar = ctx.chstream.getNextChar();
 
-      if (isDecimal(ch)) {
-        return true;
-      }
-
-      if (ch === Char.Period && isDecimal(nextchar)) {
-        return true;
-      }
-
-      const next2char = chstream.lookAhead(offset + 2);
-      const next3char = chstream.lookAhead(offset + 3);
-
-      if (
-        ch === Char.i &&
-        nextchar === Char.n &&
-        next2char === Char.f &&
-        !canBeIdentifier(next3char)
-      ) {
-        return true;
-      }
-
-      if (
-        ch === Char.n &&
-        nextchar === Char.a &&
-        next2char === Char.n &&
-        !canBeIdentifier(next3char)
-      ) {
-        return true;
-      }
-
-      return false;
-    };
-
-    if (charCanBeNumber(ctx.chstream, 0)) {
+    if (isDecimal(ch)) {
       return true;
     }
 
-    if (
-      ctx.chstream.getCurrentChar() === Char.Hyphen ||
-      ctx.chstream.getCurrentChar() === Char.Plus
-    ) {
-      if (charCanBeNumber(ctx.chstream, 1)) {
-        return true;
-      }
+    if (ch === Char.Period && isDecimal(nextchar)) {
+      return true;
     }
 
     return false;
   }
 
-  private _maybeHandleNumber(ctx: TokenizerContext): boolean {
+  // Handle integer, float, hex, octal, and decimal.
+  private _maybeHandleNumber(ctx: TokenizerContext) {
     const start = ctx.chstream.position;
-
-    if (
-      ctx.chstream.getCurrentChar() === Char.Hyphen ||
-      ctx.chstream.getCurrentChar() === Char.Plus
-    ) {
-      ctx.chstream.moveNext();
-    }
-
-    if (
-      ctx.chstream.getCurrentChar() === Char.i &&
-      ctx.chstream.nextChar === Char.n &&
-      ctx.chstream.lookAhead(2) === Char.f
-    ) {
-      ctx.chstream.advance(3);
-      ctx.tokens.push(
-        new FloatToken(
-          start,
-          ctx.chstream.position - start,
-          ctx.chstream.text.substring(start, ctx.chstream.position)
-        )
-      );
-      return true;
-    }
-
-    if (
-      ctx.chstream.getCurrentChar() === Char.n &&
-      ctx.chstream.nextChar === Char.a &&
-      ctx.chstream.lookAhead(2) === Char.n
-    ) {
-      ctx.chstream.advance(3);
-      ctx.tokens.push(
-        new FloatToken(
-          start,
-          ctx.chstream.position - start,
-          ctx.chstream.text.substring(start, ctx.chstream.position)
-        )
-      );
-      return true;
-    }
 
     if (ctx.chstream.getCurrentChar() === Char._0) {
       // hexLiteral
       if (
-        (ctx.chstream.nextChar === Char.x ||
-          ctx.chstream.nextChar === Char.X) &&
-        isHex(ctx.chstream.lookAhead(2))
+        ctx.chstream.getNextChar() === Char.x ||
+        ctx.chstream.getNextChar() === Char.X
       ) {
         ctx.chstream.advance(2);
         while (isHex(ctx.chstream.getCurrentChar())) {
@@ -345,11 +261,11 @@ export class TextProtoTokenizer {
             16
           )
         );
-        return true;
+        return;
       }
 
       // octalLiteral
-      if (isOctal(ctx.chstream.nextChar)) {
+      if (isOctal(ctx.chstream.getNextChar())) {
         ctx.chstream.moveNext();
         while (isOctal(ctx.chstream.getCurrentChar())) {
           ctx.chstream.moveNext();
@@ -362,71 +278,72 @@ export class TextProtoTokenizer {
             8
           )
         );
-        return true;
+        return;
       }
     }
 
-    // decimalLiteral
+    // float literal
     if (isDecimal(ctx.chstream.getCurrentChar())) {
       while (isDecimal(ctx.chstream.getCurrentChar())) {
         ctx.chstream.moveNext();
       }
-
-      // if next char is not ., e, E or f, it's decimalLiteral
-      if (
-        ctx.chstream.getCurrentChar() !== Char.Period &&
-        ctx.chstream.getCurrentChar() !== Char.e &&
-        ctx.chstream.getCurrentChar() !== Char.E &&
-        ctx.chstream.getCurrentChar() !== Char.f
-      ) {
-        ctx.tokens.push(
-          new IntegerToken(
-            start,
-            ctx.chstream.position - start,
-            ctx.chstream.text.substring(start, ctx.chstream.position),
-            10
-          )
-        );
-        return true;
-      }
     }
 
-    // floatLiteral
+    // if next char is ., e, E or f, it's float.
+    // otherwise it's integer.
     if (
-      ctx.chstream.getCurrentChar() === Char.Period &&
-      isDecimal(ctx.chstream.nextChar)
+      [Char.Period, Char.e, Char.E, Char.f].includes(
+        ctx.chstream.getCurrentChar()
+      )
     ) {
-      ctx.chstream.moveNext();
-      while (isDecimal(ctx.chstream.getCurrentChar())) {
-        ctx.chstream.moveNext();
-      }
-    }
-
-    if (
-      ctx.chstream.getCurrentChar() === Char.e ||
-      ctx.chstream.getCurrentChar() === Char.E
-    ) {
-      ctx.chstream.moveNext();
+      // floatLiteral
       if (
-        ctx.chstream.getCurrentChar() === Char.Plus ||
-        ctx.chstream.getCurrentChar() === Char.Hyphen
+        ctx.chstream.getCurrentChar() === Char.Period &&
+        isDecimal(ctx.chstream.getNextChar())
       ) {
         ctx.chstream.moveNext();
+        while (isDecimal(ctx.chstream.getCurrentChar())) {
+          ctx.chstream.moveNext();
+        }
       }
-      while (isDecimal(ctx.chstream.getCurrentChar())) {
+
+      if (
+        ctx.chstream.getCurrentChar() === Char.e ||
+        ctx.chstream.getCurrentChar() === Char.E
+      ) {
+        ctx.chstream.moveNext();
+        if (
+          ctx.chstream.getCurrentChar() === Char.Plus ||
+          ctx.chstream.getCurrentChar() === Char.Hyphen
+        ) {
+          ctx.chstream.moveNext();
+        }
+        while (isDecimal(ctx.chstream.getCurrentChar())) {
+          ctx.chstream.moveNext();
+        }
+      }
+
+      if (ctx.chstream.getCurrentChar() === Char.f) {
         ctx.chstream.moveNext();
       }
+
+      ctx.tokens.push(
+        new FloatToken(
+          start,
+          ctx.chstream.position - start,
+          ctx.chstream.text.substring(start, ctx.chstream.position)
+        )
+      );
+      return;
     }
 
-    if (ctx.chstream.getCurrentChar() === Char.f) {
-      ctx.chstream.moveNext();
-    }
-
+    // integer literal
     ctx.tokens.push(
-      new FloatToken(
+      new IntegerToken(
         start,
         ctx.chstream.position - start,
-        ctx.chstream.text.substring(start, ctx.chstream.position)
+        ctx.chstream.text.substring(start, ctx.chstream.position),
+        10
       )
     );
     return true;
@@ -446,16 +363,12 @@ export class TextProtoTokenizer {
     const length = ctx.chstream.position - start;
     const text = ctx.chstream.text.substring(start, start + length);
 
-    if (text === "nan") {
+    if (["nan", "inf"].includes(text.toLowerCase())) {
       ctx.tokens.push(new FloatToken(start, length, text));
-    } else if (text === "inf") {
-      ctx.tokens.push(new FloatToken(start, length, text));
-    } else if (text === "true") {
-      ctx.tokens.push(new BooleanToken(start, length, text));
-    } else if (text === "false") {
+    } else if (["true", "false"].includes(text)) {
       ctx.tokens.push(new BooleanToken(start, length, text));
     } else {
-      ctx.tokens.push(Token.create(TokenType.identifier, start, length));
+      ctx.tokens.push(new IdentifierToken(start, length, text));
     }
 
     return true;

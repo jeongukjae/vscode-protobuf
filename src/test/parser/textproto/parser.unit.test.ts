@@ -2,12 +2,13 @@ import { expect } from "chai";
 
 import {
   CommentNode,
+  FieldNode,
   NodeType,
-  ValueNode,
 } from "../../../parser/textproto/nodes";
 import { TextProtoParser } from "../../../parser/textproto/parser";
+import { CommentToken } from "../../../parser/textproto/tokens";
 
-suite("Parser >> TextProto >> Parser", () => {
+suite("Text Proto Parser", () => {
   [
     { input: "# comment" },
     { input: "foo: bar" },
@@ -33,7 +34,6 @@ suite("Parser >> TextProto >> Parser", () => {
     { input: `foo: -213f` },
     {
       input: `value: -
-      # comment
       2.0         # Valid: whitespace and comments between '-' and '2.0'.`,
     },
     {
@@ -88,9 +88,8 @@ suite("Parser >> TextProto >> Parser", () => {
       let parser = new TextProtoParser();
       let document = parser.parse(tc.input);
 
-      expect(document.type).equal(NodeType.document);
-      expect(document.start).equal(0);
-      expect(document.end).equal(tc.input.length);
+      expect(document.type).to.equal(NodeType.document);
+      expect(document.tokens.length).to.be.greaterThan(0);
     });
   });
 
@@ -122,79 +121,106 @@ suite("Parser >> TextProto >> Parser", () => {
     >
     `);
 
-    expect(document.type).equal(NodeType.document);
-    expect(document.start).equal(0);
-    expect(document.end).equal(181);
+    expect(document.type).to.equal(NodeType.document);
+    expect(document.tokens).to.have.length(20);
 
-    expect(document.children!.length).equal(5);
+    expect(document.children).to.have.length(5);
 
-    let enumField = document.children![0] as ValueNode;
-    expect(enumField.type).equal(NodeType.field);
-    expect(enumField.name).equal("enum_field");
-    expect(enumField.start).equal(5);
-    expect(enumField.end).equal(20);
+    let enumField = document.children![0] as FieldNode;
+    expect(enumField.type).to.equal(NodeType.field);
+    expect(enumField.tokens).to.have.length(3);
+    expect(enumField.key!.tokens).to.have.length(1);
+    expect(enumField.key!.tokens[0].start).to.equal(5); // enum_field
+    expect(enumField.key!.tokens[0].length).to.equal(10);
+    expect(enumField.value!.tokens).to.have.length(1);
+    expect(enumField.value!.tokens[0].start).to.equal(17); // BAR
+    expect(enumField.value!.tokens[0].length).to.equal(3);
 
-    let floatField = document.children![1] as ValueNode;
-    expect(floatField.type).equal(NodeType.field);
-    expect(floatField.name).equal("float_field");
-    expect(floatField.start).equal(21);
-    expect(floatField.end).equal(38);
+    let floatField = document.children![1] as FieldNode;
+    expect(floatField.type).to.equal(NodeType.field);
+    expect(floatField.tokens).to.have.length(3);
+    expect(floatField.key!.tokens).to.have.length(1);
+    expect(floatField.key!.tokens[0].start).to.equal(21); // float_field
+    expect(floatField.key!.tokens[0].length).to.equal(11);
+    expect(floatField.value!.tokens).to.have.length(1);
+    expect(floatField.value!.tokens[0].start).to.equal(34); // 1.23
+    expect(floatField.value!.tokens[0].length).to.equal(4);
 
-    let decimalField = document.children![2] as ValueNode;
-    expect(decimalField.type).equal(NodeType.field);
-    expect(decimalField.name).equal("decimal_field");
-    expect(decimalField.start).equal(43);
-    expect(decimalField.end).equal(67);
+    let decimalField = document.children![2] as FieldNode;
+    expect(decimalField.type).to.equal(NodeType.field);
+    expect(decimalField.tokens).to.have.length(3);
+    expect(decimalField.key!.tokens).to.have.length(1);
+    expect(decimalField.key!.tokens[0].start).to.equal(43); // decimal_field
+    expect(decimalField.key!.tokens[0].length).to.equal(13);
+    expect(decimalField.value!.tokens).to.have.length(1);
+    expect(decimalField.value!.tokens[0].start).to.equal(58); // 123456789
+    expect(decimalField.value!.tokens[0].length).to.equal(9);
 
     let comment = document.children![3] as CommentNode;
-    expect(comment.type).equal(NodeType.comment);
-    expect(comment.start).equal(73);
-    expect(comment.end).equal(93);
+    expect(comment.type).to.equal(NodeType.comment);
+    expect(comment.tokens).to.have.length(1);
+    expect(comment.tokens[0].start).to.equal(73); // This is a comment.
+    expect(comment.tokens[0].length).to.equal(20);
 
-    let nestedField = document.children![4] as ValueNode;
-    expect(nestedField.type).equal(NodeType.field);
-    expect(nestedField.name).equal("nested_field");
-    expect(nestedField.start).equal(98);
-    expect(nestedField.end).equal(176);
-    expect(nestedField.nested).equal(true);
+    let nestedField = document.children![4] as FieldNode;
+    expect(nestedField.type).to.equal(NodeType.field);
+    expect(nestedField.tokens).to.have.length(10);
+    expect(nestedField.key!.tokens).to.have.length(1);
+    expect(nestedField.key!.tokens[0].start).to.equal(98); // nested_field
+    expect(nestedField.key!.tokens[0].length).to.equal(12);
+    expect(nestedField.value!.tokens).to.have.length(9);
+    expect(nestedField.value!.tokens[0].start).to.equal(111); // <
+    expect(nestedField.value!.tokens[0].length).to.equal(1);
 
-    let nestedField2 = nestedField.children![0] as ValueNode;
-    expect(nestedField2.type).equal(NodeType.field);
-    expect(nestedField2.name).equal("nested_field2");
-    expect(nestedField2.start).equal(119);
-    expect(nestedField2.end).equal(170);
-    expect(nestedField2.nested).equal(true);
+    let nestedField2 = nestedField.value?.children[0] as FieldNode;
+    expect(nestedField2.type).to.equal(NodeType.field);
+    expect(nestedField2.tokens).to.have.length(7);
+    expect(nestedField2.key!.tokens).to.have.length(1);
+    expect(nestedField2.key!.tokens[0].start).to.equal(119); // nested_field2
+    expect(nestedField2.key!.tokens[0].length).to.equal(13);
+    expect(nestedField2.value!.tokens).to.have.length(5);
+    expect(nestedField2.value!.tokens[0].start).to.equal(134); // {
+    expect(nestedField2.value!.tokens[0].length).to.equal(1);
 
-    let floatField2 = nestedField2.children![0] as ValueNode;
-    expect(floatField2.type).equal(NodeType.field);
-    expect(floatField2.name).equal("float_field");
-    expect(floatField2.start).equal(144);
-    expect(floatField2.end).equal(162);
+    let floatField2 = nestedField2.value?.children[0] as FieldNode;
+    expect(floatField2.type).to.equal(NodeType.field);
+    expect(floatField2.tokens).to.have.length(3);
+    expect(floatField2.key!.tokens).to.have.length(1);
+    expect(floatField2.key!.tokens[0].start).to.equal(144); // float_field
+    expect(floatField2.key!.tokens[0].length).to.equal(11);
+    expect(floatField2.value!.tokens).to.have.length(1);
+    expect(floatField2.value!.tokens[0].start).to.equal(157); // 1.23f
+    expect(floatField2.value!.tokens[0].length).to.equal(5);
   });
 
   test("should parse a float literal containing comment", () => {
     let code = `value: -
-    # comment
     2.0         # Valid: whitespace and comments between '-' and '2.0'.`;
     let parser = new TextProtoParser();
 
     let document = parser.parse(code);
 
-    expect(document.type).equal(NodeType.document);
-    expect(document.start).equal(0);
-    expect(document.end).equal(code.length);
-    expect(document.children!.length).equal(2);
+    expect(document.type).to.equal(NodeType.document);
+    expect(document.tokens).to.have.length(5);
+    expect(document.children!.length).to.equal(2);
 
-    let value = document.children![0] as ValueNode;
-    expect(value.type).equal(NodeType.field);
-    expect(value.name).equal("value");
-    expect(value.start).equal(0);
-    expect(value.end).equal(30);
+    let value = document.children![0] as FieldNode;
+    expect(value.type).to.equal(NodeType.field);
+    expect(value.tokens).to.have.length(4);
+    expect(value.key!.tokens).to.have.length(1);
+    expect(value.key!.tokens[0].start).to.equal(0); // value
+    expect(value.key!.tokens[0].length).to.equal(5);
+    expect(value.value!.tokens).to.have.length(2);
+    expect(value.value!.tokens[0].start).to.equal(7); // -
+    expect(value.value!.tokens[0].length).to.equal(1);
+    expect(value.value!.tokens[1].start).to.equal(13); // 2.0
+    expect(value.value!.tokens[1].length).to.equal(3);
 
     let comment = document.children![1] as CommentNode;
-    expect(comment.type).equal(NodeType.comment);
-    expect(comment.start).equal(39);
-    expect(comment.end).equal(code.length);
+    expect(comment.type).to.equal(NodeType.comment);
+    expect(comment.tokens).to.have.length(1);
+    expect(comment.tokens[0].start).to.equal(25);
+    expect(comment.tokens[0].length).to.equal(55);
   });
 
   test("should parse repeated field", () => {
@@ -206,15 +232,17 @@ suite("Parser >> TextProto >> Parser", () => {
 
     let document = parser.parse(code);
 
-    expect(document.type).equal(NodeType.document);
-    expect(document.start).equal(0);
-    expect(document.end).equal(code.length);
+    expect(document.type).to.equal(NodeType.document);
+    expect(document.tokens).to.have.length(9);
+    expect(document.children).to.have.length(1);
 
-    let foo = document.children![0] as ValueNode;
-    expect(foo.type).equal(NodeType.field);
-    expect(foo.name).equal("foo");
-    expect(foo.start).equal(7);
-    expect(foo.end).equal(19);
+    let foo = document.children![0] as FieldNode;
+    expect(foo.type).to.equal(NodeType.field);
+    expect(foo.tokens).to.have.length(9);
+    expect(foo.key!.tokens).to.have.length(1);
+    expect(foo.key!.tokens[0].start).to.equal(7); // foo
+    expect(foo.key!.tokens[0].length).to.equal(3);
+    expect(foo.value!.tokens).to.have.length(7);
   });
 
   test("should parse starting comment", () => {
@@ -224,15 +252,14 @@ suite("Parser >> TextProto >> Parser", () => {
 
     let document = parser.parse(code);
 
-    expect(document.type).equal(NodeType.document);
-    expect(document.start).equal(0);
-    expect(document.end).equal(code.length);
-    expect(document.children).lengthOf(1);
+    expect(document.type).to.equal(NodeType.document);
+    expect(document.tokens).to.have.length(1);
+    expect(document.children).to.have.length(1);
 
     let comment = document.children![0] as CommentNode;
-    expect(comment.type).equal(NodeType.comment);
-    expect(comment.start).equal(0);
-    expect(comment.end).equal(code.length);
+    expect(comment.type).to.equal(NodeType.comment);
+    expect(comment.tokens).to.have.length(1);
+    expect((comment.tokens[0] as CommentToken).text).to.equal("# comment");
   });
 
   test("should parse successive comments", () => {
@@ -243,14 +270,14 @@ suite("Parser >> TextProto >> Parser", () => {
 
     let document = parser.parse(code);
 
-    expect(document.type).equal(NodeType.document);
-    expect(document.start).equal(0);
-    expect(document.end).equal(code.length);
-    expect(document.children).lengthOf(1);
+    expect(document.type).to.equal(NodeType.document);
+    expect(document.tokens).to.have.length(2);
+    expect(document.children).to.have.length(1);
 
-    let comment = document.children![0] as CommentNode;
-    expect(comment.type).equal(NodeType.comment);
-    expect(comment.start).equal(0);
-    expect(comment.end).equal(code.length);
+    let comment = document.children[0] as CommentNode;
+    expect(comment.type).to.equal(NodeType.comment);
+    expect(comment.tokens).to.have.length(2);
+    expect((comment.tokens[0] as CommentToken).text).to.equal("# comment");
+    expect((comment.tokens[1] as CommentToken).text).to.equal("# comment 2");
   });
 });

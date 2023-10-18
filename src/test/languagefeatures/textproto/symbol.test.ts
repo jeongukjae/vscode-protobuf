@@ -20,6 +20,8 @@ suite("LanguageFeatures >> TextProto >> SymbolProvider", () => {
               float_field: 1.23f
             }
           >
+
+          [com.example.foo]: 123
         `,
       })
       .then((doc) => {
@@ -28,7 +30,7 @@ suite("LanguageFeatures >> TextProto >> SymbolProvider", () => {
           new vscode.CancellationTokenSource().token
         ) as vscode.SymbolInformation[];
 
-        expect(symbols.length).to.equal(6);
+        expect(symbols.length).to.equal(7);
         expect(symbols[0].name).to.equal("enum_field");
         expect(symbols[0].kind).to.equal(vscode.SymbolKind.Field);
         expect(symbols[1].name).to.equal("float_field");
@@ -41,6 +43,8 @@ suite("LanguageFeatures >> TextProto >> SymbolProvider", () => {
         expect(symbols[4].kind).to.equal(vscode.SymbolKind.Field);
         expect(symbols[5].name).to.equal("float_field");
         expect(symbols[5].kind).to.equal(vscode.SymbolKind.Field);
+        expect(symbols[6].name).to.equal("[com.example.foo]");
+        expect(symbols[6].kind).to.equal(vscode.SymbolKind.Field);
       });
   });
 });
