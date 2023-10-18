@@ -1,5 +1,7 @@
 # vscode-protobuf
 
+***This project is not stable and currently under development. Please report any issues or feature requests to [GitHub issues](https://github.com/jeongukjae/vscode-protobuf/issues).***
+
 vscode-protobuf provides additional features for editing Protocol Buffers and its Text Format.
 
 [![codecov](https://codecov.io/gh/jeongukjae/vscode-protobuf/branch/main/graph/badge.svg?token=cfa725IQ9j)](https://codecov.io/gh/jeongukjae/vscode-protobuf)
