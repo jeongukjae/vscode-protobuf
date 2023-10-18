@@ -17,10 +17,6 @@
     "Formatters",
     "Linters"
   ],
-  "activationEvents": [
-    "onLanguage:protobuf3",
-    "onLanguage:textproto"
-  ],
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
