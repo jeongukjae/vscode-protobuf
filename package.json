@@ -149,6 +149,7 @@
         "extensions": [
           ".textproto",
           ".textpb",
+          ".txtpb",
           ".prototext",
           ".prototxt",
           ".pbtxt"
