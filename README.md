@@ -24,23 +24,62 @@ For example if there is an image subfolder under your extension project workspac
 
 This extension contributes the following settings:
 
+### For Protocol Buffers
+
 | Setting | Description | Default |
 | --- | --- | --- |
 | `protobuf3.compiler.provider` | The compiler to use for compiling Protocol Buffers 3 files. | `protoc` |
 | `protobuf3.format.provider` | The formatter to use for formatting Protocol Buffers 3 files. |`clang-format` |
+| `protobuf3.api-linter.enabled` | Whether to enable api-linter. | `false` |
+| `protobuf3.buf.lint.enabled` | Whether to enable buf lint. | `false` |
+||||
 | `protobuf3.protoc.executable` | The path to the protoc executable. | `protoc` |
 | `protobuf3.protoc.arguments` | The arguments to pass to protoc. | `[]` |
-| `protobuf3.api-linter.enabled` | Whether to enable api-linter. | `false` |
 | `protobuf3.api-linter.executable` | The path to the api-linter executable. | `api-linter` |
 | `protobuf3.api-linter.arguments` | The arguments to pass to api-linter. | `[]` |
-| `protobuf3.buf.lint.enabled` | Whether to enable buf lint. | `false` |
 | `protobuf3.buf.executable` | The path to the buf executable. | `buf` |
 | `protobuf3.buf.arguments` | The arguments to pass to buf. | `[]` |
 | `protobuf3.clang-format.executable` | The path to the clang-format executable. | `clang-format` |
 | `protobuf3.clang-format.arguments` | The arguments to pass to clang-format. | `['-style=google']` |
-| `textproto.format.provider` | The formatter to use for formatting Protocol Buffers Text Format files. | `txtpbfmt`
+
+### For Text Format
+
+| Setting | Description | Default |
+| --- | --- | --- |
+| `textproto.format.provider` | The formatter to use for formatting Protocol Buffers Text Format files. | `txtpbfmt` |
+||||
 | `textproto.txtpbfmt.executable` | The path to the txtpbfmt executable. | `txtpbfmt` |
 | `textproto.txtpbfmt.arguments` | The arguments to pass to txtpbfmt. | `[]` |
+
+### Examples
+
+*If you want to use `buf` for linting, formatting, and diagnostics:*
+
+```jsonc
+{
+    "protobuf3.compiler.provider": "buf",
+    "protobuf3.format.provider": "buf",
+    "protobuf3.buf.lint.enabled": true,
+    // Optional: "protobuf3.buf.executable": "/path/to/buf",
+    // Optional: "protobuf3.buf.arguments": ["Some", "arguments", "for", "buf"],
+}
+```
+
+*If you want to get diagnostics from `protoc`, format protobuf with `clang-format`, and lint with `api-linter`:*
+
+```jsonc
+{
+    "protobuf3.compiler.provider": "protoc",
+    // Optional: "protobuf3.protoc.executable": "/path/to/protoc",
+    // Optional: "protobuf3.protoc.arguments": ["Some", "arguments", "for", "protoc"],
+    "protobuf3.format.provider": "clang-format",
+    // Optional: "protobuf3.clang-format.executable": "/path/to/clang-format",
+    // Optional: "protobuf3.clang-format.arguments": ["Some", "arguments", "for", "clang-format"],
+    "protobuf3.api-linter.enabled": true,
+    // Optional: "protobuf3.api-linter.executable": "/path/to/api-linter",
+    // Optional: "protobuf3.api-linter.arguments": ["Some", "arguments", "for", "api-linter"],
+}
+```
 
 ## TODO
 
