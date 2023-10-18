@@ -2,7 +2,7 @@
 
 Changelog for vscode-proto3.
 
-## [0.3.0](https://github.com/jeongukjae/vscode-protobuf/releases/tag/v0.2.0) - WIP
+## [0.3.0](https://github.com/jeongukjae/vscode-protobuf/releases/tag/v0.3.0) - 2023-10-18
 
 ### Added
 
