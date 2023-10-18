@@ -4,7 +4,7 @@ Changelog for vscode-protobuf.
 
 <!-- http://keepachangelog.com/ -->
 
-## 0.4.0 - WIP
+## 0.4.0 - 2023-10-18
 
 ### Added
 
