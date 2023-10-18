@@ -3,7 +3,11 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 
-import { isCommandAvailable, isExecutableFileAvailable } from "../../utils";
+import {
+  getWorkingDirectory,
+  isCommandAvailable,
+  isExecutableFileAvailable,
+} from "../../utils";
 
 // TODO: show another files' diagnostics if possible.
 
@@ -67,6 +71,8 @@ const doLinterDiagnostic = (
 function compileTempWithProtoc(
   document: vscode.TextDocument
 ): vscode.Diagnostic[] {
+  const proto3Option = vscode.workspace.getConfiguration("protobuf3");
+
   // Slightly modified from
   // https://github.com/zxh0/vscode-proto3/blob/master/src/proto3Diagnostic.ts
   // Big thanks to zxh0 for the original code!
@@ -89,16 +95,11 @@ function compileTempWithProtoc(
   });
 
   args.push(`--cpp_out=${os.tmpdir()}`);
-
-  if (
-    args.filter(
-      (arg) => arg.indexOf("-I") !== -1 || arg.indexOf("--proto_path") !== -1
-    ).length === 0
-  ) {
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
-    if (workspaceFolder) {
-      args.push(`-I${workspaceFolder.uri.fsPath}`);
-    }
+  let workDir = proto3Option.get("working_directory", undefined) as
+    | string
+    | undefined;
+  if (workDir) {
+    args.push(`--proto_path=${workDir}`);
   }
 
   args.push(document.fileName);
@@ -155,6 +156,8 @@ function protocErrorToDiagnostic(
 }
 
 function lintWithBuf(document: vscode.TextDocument): vscode.Diagnostic[] {
+  const proto3Option = vscode.workspace.getConfiguration("protobuf3");
+
   const bufOption = vscode.workspace.getConfiguration("protobuf3.buf");
   const bufPath = bufOption.get("executable", "buf");
 
@@ -174,10 +177,7 @@ function lintWithBuf(document: vscode.TextDocument): vscode.Diagnostic[] {
   args.push(document.fileName + "#include_package_files=true");
   args.push("--error-format=json");
 
-  let cwd = vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath;
-  if (!cwd) {
-    cwd = os.tmpdir();
-  }
+  const cwd = getWorkingDirectory(document, proto3Option, os.tmpdir());
 
   let result = cp.spawnSync(bufPath, args, { cwd: cwd, encoding: "utf-8" });
   if (result.error !== undefined) {
@@ -240,6 +240,8 @@ function bufErrorToDiagnostic(
 }
 
 function lintWithApiLinter(document: vscode.TextDocument): vscode.Diagnostic[] {
+  const proto3Option = vscode.workspace.getConfiguration("protobuf3");
+
   const apiLinterOption = vscode.workspace.getConfiguration(
     "protobuf3.api-linter"
   );
@@ -266,10 +268,8 @@ function lintWithApiLinter(document: vscode.TextDocument): vscode.Diagnostic[] {
 
   args.push("--output-format=json");
   args.push(document.fileName);
-  let cwd = vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath;
-  if (!cwd) {
-    cwd = os.tmpdir();
-  }
+
+  const cwd = getWorkingDirectory(document, proto3Option, os.tmpdir());
 
   let result = cp.spawnSync(apiLinterPath, args, {
     cwd: cwd,

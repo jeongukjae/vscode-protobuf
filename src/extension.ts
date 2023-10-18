@@ -14,6 +14,8 @@ const TEXT_PROTO_ID = "textproto";
 export async function activate(context: vscode.ExtensionContext) {
   await proto3Index.initialize();
 
+  // TODO: Do we need to limit the protobuf3 parsing to only protobuf3.working_directory?
+
   // proto3
   const diagnostics =
     vscode.languages.createDiagnosticCollection("protobuf-errors");
