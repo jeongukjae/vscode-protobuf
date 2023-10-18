@@ -18,9 +18,23 @@ export const doProto3Diagnostic = (
   document: vscode.TextDocument,
   diag: vscode.DiagnosticCollection
 ) => {
-  let diagnostics = doCompilerDiagnostic(document);
-  let result = diagnostics.concat(doLinterDiagnostic(document));
-  diag.set(document.uri, result);
+  let diagnostics: vscode.Diagnostic[] = [];
+
+  try {
+    diagnostics = doCompilerDiagnostic(document);
+  } catch (e) {
+    // TODO: show error message.
+    console.log(e);
+  }
+
+  try {
+    diagnostics = diagnostics.concat(doLinterDiagnostic(document));
+  } catch (e) {
+    // TODO: show error message.
+    console.log(e);
+  }
+
+  diag.set(document.uri, diagnostics);
 };
 
 const doCompilerDiagnostic = (
@@ -99,6 +113,12 @@ function compileTempWithProtoc(
     | string
     | undefined;
   if (workDir) {
+    workDir = path.resolve(
+      path.join(
+        vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath ?? "",
+        workDir
+      )
+    );
     args.push(`--proto_path=${workDir}`);
   }
 
@@ -109,7 +129,7 @@ function compileTempWithProtoc(
   }
 
   let stderr = result.stderr.toString();
-  let shortFileName = path.parse(document.fileName).name;
+  let shortFileName = path.parse(document.fileName).base;
   const diagnostics: vscode.Diagnostic[] = stderr
     .split("\n")
     .filter((line) => line.includes(shortFileName))
