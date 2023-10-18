@@ -7,6 +7,11 @@ Contributions are always welcome, and feel free to file issues and suggestions i
 ### Requirements
 
 * Node.js 16+
+* [protoc](https://github.com/protocolbuffers/protobuf) should be registered in `$PATH`
+  * Download from release page or install it with package manager like brew or apt.
+* [txtpbfmt](https://github.com/protocolbuffers/txtpbfmt) via `go install github.com/protocolbuffers/txtpbfmt/cmd/txtpbfmt@latest`
+* [buf](https://buf.build/docs/introduction) via `go install github.com/bufbuild/buf/cmd/buf@latest`
+* [api-linter](https://github.com/googleapis/api-linter) via `go install github.com/googleapis/api-linter/cmd/api-linter@latest`
 
 ### Install dependencies & build
 
