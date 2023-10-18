@@ -16,9 +16,11 @@ suite("LanguageFeatures >> Proto3 >> Diagnostics", () => {
     }
 
     let settings = vscode.workspace.getConfiguration("protobuf3");
+    await settings.update("working_directory", ".");
     await settings.update("compiler.provider", "protoc");
     await settings.update("protoc.executable", "protoc");
     await settings.update("buf.lint.enabled", false);
+    await settings.update("api-linter.enabled", false);
 
     return vscode.workspace
       .openTextDocument(`${rootPath}/another/diagnostics/protoc/broken.proto`)

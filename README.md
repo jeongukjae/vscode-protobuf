@@ -28,6 +28,7 @@ This extension contributes the following settings:
 
 | Setting | Description | Default |
 | --- | --- | --- |
+| `protobuf3.working_directory` | The working directory to use for running the Protocol Buffers 3 tools. | `.` |
 | `protobuf3.compiler.provider` | The compiler to use for compiling Protocol Buffers 3 files. | `protoc` |
 | `protobuf3.format.provider` | The formatter to use for formatting Protocol Buffers 3 files. |`clang-format` |
 | `protobuf3.api-linter.enabled` | Whether to enable api-linter. | `false` |
@@ -52,6 +53,15 @@ This extension contributes the following settings:
 | `textproto.txtpbfmt.arguments` | The arguments to pass to txtpbfmt. | `[]` |
 
 ### Examples
+
+*If you store protobuf files in `proto/` directory:*
+
+```jsonc
+{
+    "protobuf3.working_directory": "./proto",
+    // ...
+}
+```
 
 *If you want to use `buf` for linting, formatting, and diagnostics:*
 

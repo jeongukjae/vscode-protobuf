@@ -23,6 +23,12 @@
       "type": "object",
       "title": "Protocol Buffers Configuration",
       "properties": {
+        "protobuf3.working_directory": {
+          "type": "string",
+          "default": ".",
+          "description": "The working directory to use for running the Protocol Buffers 3 tools.",
+          "scope": "resource"
+        },
         "protobuf3.compiler.provider": {
           "type": "string",
           "default": "protoc",
