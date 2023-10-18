@@ -28,13 +28,11 @@ Run `Run Extension` task defined in [`.vscode/launch.json`](.vscode/launch.json)
 ### Run the tests
 
 ```sh
-# Run extension tests
-yarn test:extension
-# Run unittest
-yarn test:unit
-
 # Run all tests
 yarn test
+
+# Run unit tests only (this will not execute any extension-related tests)
+yarn test:unit
 ```
 
 ### Run the linter and formatter
