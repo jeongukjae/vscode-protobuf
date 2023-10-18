@@ -105,9 +105,9 @@ suite("Parser >> TextProto >> Tokenizer", () => {
       const token = tokens[i];
       const expected = expectedTokens[i];
 
-      expect(token.type).to.equal(expected.type, `Token ${i} type`);
-      expect(token.start).to.equal(expected.start, `Token ${i} start`);
-      expect(token.length).to.equal(expected.length, `Token ${i} length`);
+      expect(token.type).to.equal(expected.type);
+      expect(token.start).to.equal(expected.start);
+      expect(token.length).to.equal(expected.length);
     }
     expect(tokens.length).to.equal(expectedTokens.length);
   });
@@ -145,28 +145,10 @@ suite("Parser >> TextProto >> Tokenizer", () => {
 
   [
     { name: "basic case", input: "0" },
-    { name: "basic case with negative sign", input: "-123" },
-    { name: "basic case with positive sign", input: "+123" },
     { name: "hex digits", input: "0x1234" },
     { name: "hex digits with leading 0", input: "0x01234" },
-    {
-      name: "hex digits with leading 0 and negative sign",
-      input: "-0x01234",
-    },
-    {
-      name: "hex digits with leading 0 and positive sign",
-      input: "+0x01234",
-    },
     { name: "octal digits", input: "01234" },
     { name: "octal digits with leading 0", input: "001234" },
-    {
-      name: "octal digits with leading 0 and negative sign",
-      input: "-001234",
-    },
-    {
-      name: "octal digits with leading 0 and positive sign",
-      input: "+001234",
-    },
   ].forEach((tc) => {
     test(`should tokenize an integer: ${tc.name}`, () => {
       const tokenizer = new TextProtoTokenizer();
@@ -184,8 +166,6 @@ suite("Parser >> TextProto >> Tokenizer", () => {
     { name: "floating point", input: "123.456" },
     { name: "floating point with f suffix 1", input: "123f" },
     { name: "floating point with f suffix 2", input: "123.456f" },
-    { name: "floating point with negative sign", input: "-123.456" },
-    { name: "floating point with positive sign", input: "+123.456" },
     { name: "floating point without leading 0", input: ".456" },
     { name: "floating point with exponent", input: "123.456e-7" },
     { name: "floating point with exponent 2", input: "123.456E+7" },

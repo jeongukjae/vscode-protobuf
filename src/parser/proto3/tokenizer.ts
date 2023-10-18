@@ -2,14 +2,14 @@
 // https://protobuf.dev/reference/protobuf/proto3-spec/
 import Char from "typescript-char";
 
-import { CharacterStream } from "../chstream";
+import { CharacterStream } from "../core/chstream";
 import {
   canBeIdentifier,
   canBeStartIdentifier,
   isDecimal,
   isHex,
   isOctal,
-} from "../utils";
+} from "../core/utils";
 import {
   BooleanToken,
   Comment,
@@ -72,9 +72,9 @@ export class Proto3Tokenizer {
   private _handleChar(ctx: TokenizerContext) {
     switch (ctx.chstream.getCurrentChar()) {
       case Char.Slash: {
-        if (ctx.chstream.nextChar === Char.Slash) {
+        if (ctx.chstream.getNextChar() === Char.Slash) {
           this._handleSingleLineComment(ctx);
-        } else if (ctx.chstream.nextChar === Char.Asterisk) {
+        } else if (ctx.chstream.getNextChar() === Char.Asterisk) {
           this._handleMultiLineComment(ctx);
         } else {
           // invalid token here.
@@ -216,7 +216,7 @@ export class Proto3Tokenizer {
     while (!ctx.chstream.isEndOfStream()) {
       if (
         ctx.chstream.getCurrentChar() === Char.Asterisk &&
-        ctx.chstream.nextChar === Char.Slash
+        ctx.chstream.getNextChar() === Char.Slash
       ) {
         ctx.chstream.advance(2);
         break;
@@ -246,7 +246,7 @@ export class Proto3Tokenizer {
       }
       if (
         ctx.chstream.getCurrentChar() === Char.Backslash &&
-        ctx.chstream.nextChar === quote
+        ctx.chstream.getNextChar() === quote
       ) {
         ctx.chstream.moveNext();
       }
@@ -326,7 +326,7 @@ export class Proto3Tokenizer {
 
     if (
       ctx.chstream.getCurrentChar() === Char.i &&
-      ctx.chstream.nextChar === Char.n &&
+      ctx.chstream.getNextChar() === Char.n &&
       ctx.chstream.lookAhead(2) === Char.f
     ) {
       ctx.chstream.advance(3);
@@ -342,7 +342,7 @@ export class Proto3Tokenizer {
 
     if (
       ctx.chstream.getCurrentChar() === Char.n &&
-      ctx.chstream.nextChar === Char.a &&
+      ctx.chstream.getNextChar() === Char.a &&
       ctx.chstream.lookAhead(2) === Char.n
     ) {
       ctx.chstream.advance(3);
@@ -359,8 +359,8 @@ export class Proto3Tokenizer {
     if (ctx.chstream.getCurrentChar() === Char._0) {
       // hexLiteral
       if (
-        (ctx.chstream.nextChar === Char.x ||
-          ctx.chstream.nextChar === Char.X) &&
+        (ctx.chstream.getNextChar() === Char.x ||
+          ctx.chstream.getNextChar() === Char.X) &&
         isHex(ctx.chstream.lookAhead(2))
       ) {
         ctx.chstream.advance(2);
@@ -379,7 +379,7 @@ export class Proto3Tokenizer {
       }
 
       // octalLiteral
-      if (isOctal(ctx.chstream.nextChar)) {
+      if (isOctal(ctx.chstream.getNextChar())) {
         ctx.chstream.moveNext();
         while (isOctal(ctx.chstream.getCurrentChar())) {
           ctx.chstream.moveNext();
@@ -423,7 +423,7 @@ export class Proto3Tokenizer {
     // floatLiteral
     if (
       ctx.chstream.getCurrentChar() === Char.Period &&
-      isDecimal(ctx.chstream.nextChar)
+      isDecimal(ctx.chstream.getNextChar())
     ) {
       ctx.chstream.moveNext();
       while (isDecimal(ctx.chstream.getCurrentChar())) {

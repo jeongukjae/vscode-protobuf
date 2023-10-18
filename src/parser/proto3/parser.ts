@@ -1,6 +1,6 @@
 // https://protobuf.dev/reference/protobuf/proto3-spec/
 // XXX: add empty statement node?
-import { TokenStream } from "../tokenstream";
+import { TokenStream } from "../core/tokenstream";
 import {
   CommentNode,
   DocumentNode,

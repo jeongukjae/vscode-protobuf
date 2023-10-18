@@ -22,6 +22,10 @@ export class TokenStream<T extends StreamUnit> {
     return this._position;
   }
 
+  get tokens(): T[] {
+    return this._tokens;
+  }
+
   getCurrentToken(): T {
     return this._tokens[this._position];
   }

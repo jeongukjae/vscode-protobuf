@@ -1,64 +1,127 @@
+// Example node hierarchy for textproto:
+// document
+//   |--- header
+//   |--- comment
+//   |--- field 1
+//        |--- key
+//        |--- value
+//   |--- field 2 (nested)
+//        |--- key
+//        |--- comment
+//        |--- field 3
+//             |--- key
+//             |--- comment
+//             |--- value
+//        |--- ...
+import { CommentToken, Token } from "./tokens";
+
 export const enum NodeType {
   invalid,
   empty,
 
-  document,
+  document, // root node
 
-  comment,
   header, // proto-file: and proto-message: directives
+  comment,
 
   field,
+  key,
+  value,
 }
 
 export abstract class Node {
   type: NodeType;
-  start: number;
-  end: number;
+  tokens: Token[];
 
   parent?: Node;
-  children?: Node[];
+  children: Node[] = [];
 
-  constructor(type: NodeType, start: number, end: number) {
+  constructor(type: NodeType, tokens: Token[]) {
     this.type = type;
-    this.start = start;
-    this.end = end;
-  }
-
-  setParent(node: Node) {
-    this.parent = node;
+    this.tokens = tokens;
   }
 
   add(node: Node) {
-    if (!this.children) {
-      this.children = [];
-    }
     this.children.push(node);
+    node.parent = this;
+  }
+
+  getStart() {
+    if (this.tokens.length === 0) {
+      return 0;
+    }
+
+    return this.tokens[0].start;
+  }
+
+  getEnd() {
+    if (this.tokens.length === 0) {
+      return 0;
+    }
+    const lastToken = this.tokens[this.tokens.length - 1];
+
+    return lastToken.start + lastToken.length;
   }
 }
 
 export class DocumentNode extends Node {
-  constructor(start: number, end: number) {
-    super(NodeType.document, start, end);
+  constructor(tokens: Token[]) {
+    super(NodeType.document, tokens);
+  }
+}
+
+export class HeaderNode extends Node {
+  constructor(tokens: CommentToken[]) {
+    super(NodeType.header, tokens);
   }
 }
 
 export class CommentNode extends Node {
-  constructor(start: number, end: number) {
-    super(NodeType.comment, start, end);
+  constructor(tokens: CommentToken[]) {
+    super(NodeType.comment, tokens);
   }
 }
 
-export class ValueNode extends Node {
+export class FieldNode extends Node {
+  key?: KeyNode;
+  value?: ValueNode;
+
+  constructor() {
+    super(NodeType.field, []);
+  }
+
+  setKey(key: KeyNode) {
+    this.key = key;
+    super.add(key);
+  }
+
+  setValue(value: ValueNode) {
+    this.value = value;
+    super.add(value);
+  }
+}
+
+export class KeyNode extends Node {
   name: string;
-  nested: boolean = false;
 
-  constructor(name: string, start: number, end: number) {
-    super(NodeType.field, start, end);
+  constructor(tokens: Token[]) {
+    super(NodeType.key, tokens);
 
+    this.name = "";
+  }
+
+  setName(name: string) {
     this.name = name;
   }
 
-  setNested(nested: boolean) {
-    this.nested = nested;
+  getName() {
+    return this.name;
+  }
+}
+
+// Value can be a literal, a list, a map, or a block.
+export class ValueNode extends Node {
+  constructor() {
+    super(NodeType.value, []);
   }
 }

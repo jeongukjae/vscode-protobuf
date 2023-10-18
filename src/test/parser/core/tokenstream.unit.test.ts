@@ -1,6 +1,6 @@
 import { expect } from "chai";
 
-import { TokenStream } from "../../parser/tokenstream";
+import { TokenStream } from "../../../parser/core/tokenstream";
 
 class TestStreamUnit {
   start: number;
