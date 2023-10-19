@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package com.example.dst2;
+
+message Dst2 {
+}

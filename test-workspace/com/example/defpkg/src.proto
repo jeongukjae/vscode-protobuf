@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "com/example/defpkg/dst.proto";
+import "com/example/defpkg/dst2.proto";
+
+package com.example.defpkg;
+
+message Source {
+  optional dst.Dst dst = 1;
+  optional dst2.Dst2 dst2 = 2;
+}
