@@ -129,7 +129,7 @@ const findFieldDefinition = (
     });
   }
 
-  let pkg: string;
+  let pkgs: string[] = [];
   let typeName: string;
   if (!dtype.includes(".")) {
     let pkg_ = documentNode.getPackage();
@@ -139,27 +139,39 @@ const findFieldDefinition = (
       );
       return;
     }
-    pkg = pkg_.name;
+    pkgs = [pkg_.name];
     typeName = dtype;
   } else {
     let names = dtype.split(".");
 
     typeName = dtype;
-    pkg = documentNode.getPackage()?.name ?? "";
+    let basePkgNameParts = documentNode.getPackage()?.name.split(".") ?? [];
 
     if (names.length > 1) {
       typeName = names[names.length - 1];
-      pkg = names.slice(0, names.length - 1).join(".");
+
+      // NOTE: when basePkgNameParts is [a, b, c], and names [d, e, f],
+      // we should find [a, b, c, d, e], [a, b, d, e], [a, d, e], and [d, e].
+      // (f is the type name)
+      for (let i = basePkgNameParts.length; i >= 0; i--) {
+        let pkgNameParts = basePkgNameParts
+          .slice(0, i)
+          .concat(names.slice(0, names.length - 1));
+        pkgs.push(pkgNameParts.join("."));
+      }
     }
   }
 
-  return findAllAccessiblePaths(document).then((paths) => {
-    let defs = proto3Index.findMsgOrEnum(pkg, typeName);
-    console.log(defs, paths);
-    return defs
-      .filter((def) => paths.has(def.link.targetUri.fsPath))
-      .map((def) => def.link);
-  });
+  return findAllAccessiblePaths(document).then((paths) =>
+    pkgs
+      .map((pkg) =>
+        proto3Index
+          .findMsgOrEnum(pkg, typeName)
+          .filter((def) => paths.has(def.link.targetUri.fsPath))
+          .map((def) => def.link)
+      )
+      .flat()
+  );
 };
 
 const findAllAccessiblePaths = async (

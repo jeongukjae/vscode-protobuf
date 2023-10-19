@@ -191,4 +191,48 @@ suite("LanguageFeatures >> Proto3 >> Definition", () => {
     expect(links).to.not.be.undefined;
     expect(links).lengthOf(0);
   });
+
+  test("should find msg with partial package name", async () => {
+    let doc = await vscode.workspace.openTextDocument(
+      `${rootPath}/com/example/defpkg/src.proto`
+    );
+
+    // dst1
+    let result = await proto3DefinitionProvider.provideDefinition(
+      doc,
+      new vscode.Position(8, 17),
+      new vscode.CancellationTokenSource().token
+    );
+
+    let links = result as vscode.LocationLink[];
+
+    expect(links).to.not.be.undefined;
+    expect(links).lengthOf(1);
+    expect(links[0].targetUri.fsPath).to.match(
+      /.*com\/example\/defpkg\/dst.proto$/
+    );
+    expect(links[0].targetRange.start.line).to.equal(4);
+    expect(links[0].targetRange.start.character).to.equal(0);
+    expect(links[0].targetRange.end.line).to.equal(5);
+    expect(links[0].targetRange.end.character).to.equal(1);
+
+    // dst1
+    result = await proto3DefinitionProvider.provideDefinition(
+      doc,
+      new vscode.Position(9, 17),
+      new vscode.CancellationTokenSource().token
+    );
+
+    links = result as vscode.LocationLink[];
+
+    expect(links).to.not.be.undefined;
+    expect(links).lengthOf(1);
+    expect(links[0].targetUri.fsPath).to.match(
+      /.*com\/example\/defpkg\/dst2.proto$/
+    );
+    expect(links[0].targetRange.start.line).to.equal(4);
+    expect(links[0].targetRange.start.character).to.equal(0);
+    expect(links[0].targetRange.end.line).to.equal(5);
+    expect(links[0].targetRange.end.character).to.equal(1);
+  });
 });
