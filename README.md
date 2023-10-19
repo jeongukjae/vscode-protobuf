@@ -8,6 +8,7 @@ vscode-protobuf provides additional features for editing Protocol Buffers and it
 
 ## Features
 
+* Add `Protocol Buffers 3` and `Protocol Buffers Text Format` language support.
 * Syntax highlighting for Protocol Buffers and Text Format.
 * Diagnostic messages (compile & lint) for Protocol Buffers. (`protoc`, `buf`, `api-linter`)
 * Code formatting for Protocol Buffers and Text Format. (`clang-format` & `buf` for Protocol Buffers, `txtpbfmt` for Text Format)
@@ -31,8 +32,8 @@ This extension contributes the following settings:
 | Setting | Description | Default |
 | --- | --- | --- |
 | `protobuf3.working_directory` | The working directory to use for running the Protocol Buffers 3 tools. | `.` |
-| `protobuf3.compiler.provider` | The compiler to use for compiling Protocol Buffers 3 files. | `protoc` |
-| `protobuf3.format.provider` | The formatter to use for formatting Protocol Buffers 3 files. |`clang-format` |
+| `protobuf3.compiler.provider` | The compiler to use for compiling Protocol Buffers 3 files. `protoc` or `buf` can be used. | `protoc` |
+| `protobuf3.format.provider` | The formatter to use for formatting Protocol Buffers 3 files. `clang-format` or `buf` can be used. |`clang-format` |
 | `protobuf3.api-linter.enabled` | Whether to enable api-linter. | `false` |
 | `protobuf3.buf.lint.enabled` | Whether to enable buf lint. | `false` |
 ||||
@@ -49,7 +50,7 @@ This extension contributes the following settings:
 
 | Setting | Description | Default |
 | --- | --- | --- |
-| `textproto.format.provider` | The formatter to use for formatting Protocol Buffers Text Format files. | `txtpbfmt` |
+| `textproto.format.provider` | The formatter to use for formatting Protocol Buffers Text Format files. Only `txtpbfmt` is supported. | `txtpbfmt` |
 ||||
 | `textproto.txtpbfmt.executable` | The path to the txtpbfmt executable. | `txtpbfmt` |
 | `textproto.txtpbfmt.arguments` | The arguments to pass to txtpbfmt. | `[]` |
