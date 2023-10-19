@@ -214,6 +214,7 @@ function lintWithBuf(document: vscode.TextDocument): vscode.Diagnostic[] {
   const diagnostics: vscode.Diagnostic[] = result.stdout
     .trim()
     .split("\n")
+    .filter((line) => line.length > 0)
     .map((lineString) => JSON.parse(lineString))
     .map((line) => bufErrorToDiagnostic(document, line))
     .filter((diag): diag is vscode.Diagnostic => diag !== null);
@@ -317,6 +318,7 @@ function lintWithApiLinter(document: vscode.TextDocument): vscode.Diagnostic[] {
         );
       });
   } catch (e) {
+    console.log(`Failed to parse api-linter output: ${result.stdout}`);
     // If the output is not JSON, it should be a parse error.
     // And the error message should be shown from the compiler diagnostics.
   }
